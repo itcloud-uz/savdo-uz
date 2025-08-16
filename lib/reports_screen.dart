@@ -48,6 +48,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     final DateFormat formatter = DateFormat('dd.MM.yyyy');
 
+    // Ekran o'lchamiga qarab dinamik ustunlar soni
+    final isLargeScreen = MediaQuery.of(context).size.width > 800;
+    final int crossAxisCount = isLargeScreen ? 2 : 1;
+
     return Scaffold(
       body: ListView(
         padding: const EdgeInsets.all(16.0),
@@ -93,32 +97,42 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          _buildReportCard(
-            context,
-            title: "Umumiy Savdo Hisoboti",
-            subtitle: "Tanlangan davrdagi umumiy savdo va cheklar soni.",
-            icon: Icons.receipt_long,
-            onTap: () =>
-                _showReport("Umumiy Savdo Hisoboti", _buildSalesReport()),
-          ),
-          _buildReportCard(
-            context,
-            title: "Mahsulotlar Hisoboti",
-            subtitle: "Eng ko'p va eng kam sotilgan mahsulotlar ro'yxati.",
-            icon: Icons.inventory_2_outlined,
-            onTap: () =>
-                _showReport("Mahsulotlar Hisoboti", _buildProductsReport()),
-          ),
-          _buildReportCard(
-            context,
-            title: "Xodimlar Hisoboti",
-            subtitle: "Har bir xodimning savdo ko'rsatkichlari.",
-            icon: Icons.people_outline,
-            onTap: () => _showReport(
-                "Xodimlar Hisoboti",
-                const Center(
-                    child: Text("Bu hisobot tez orada tayyor bo'ladi."))),
-          ),
+          GridView.count(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 3, // Karta o'lchami
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _buildReportCard(
+                context,
+                title: "Umumiy Savdo Hisoboti",
+                subtitle: "Tanlangan davrdagi umumiy savdo va cheklar soni.",
+                icon: Icons.receipt_long,
+                onTap: () =>
+                    _showReport("Umumiy Savdo Hisoboti", _buildSalesReport()),
+              ),
+              _buildReportCard(
+                context,
+                title: "Mahsulotlar Hisoboti",
+                subtitle: "Eng ko'p va eng kam sotilgan mahsulotlar ro'yxati.",
+                icon: Icons.inventory_2_outlined,
+                onTap: () =>
+                    _showReport("Mahsulotlar Hisoboti", _buildProductsReport()),
+              ),
+              _buildReportCard(
+                context,
+                title: "Xodimlar Hisoboti",
+                subtitle: "Har bir xodimning savdo ko'rsatkichlari.",
+                icon: Icons.people_outline,
+                onTap: () => _showReport(
+                    "Xodimlar Hisoboti",
+                    const Center(
+                        child: Text("Bu hisobot tez orada tayyor bo'ladi."))),
+              ),
+            ],
+          )
         ],
       ),
     );
