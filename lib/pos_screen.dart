@@ -6,14 +6,13 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 // --- Ma'lumotlar Modellari ---
 
-// Mahsulot uchun model
 class Product {
   final String id;
   final String name;
   final double price;
   final String unit;
   final String? imageUrl;
-  final num quantity; // Qoldiqni kuzatish uchun
+  final num quantity;
 
   Product({
     required this.id,
@@ -37,7 +36,6 @@ class Product {
   }
 }
 
-// Savatdagi mahsulot uchun model
 class CartItem {
   final Product product;
   int quantity;
@@ -58,15 +56,33 @@ class _PosScreenState extends State<PosScreen> {
   final currencyFormatter =
       NumberFormat.currency(locale: 'uz_UZ', symbol: "so'm", decimalDigits: 0);
 
-  // --- Mantiq (Logika) ---
+  final _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   void _addToCart(Product product) {
     setState(() {
       for (var item in _cartItems) {
         if (item.product.id == product.id) {
           if (item.quantity < product.quantity) {
             item.quantity++;
-            return;
           }
+          return;
         }
       }
       if (product.quantity > 0) {
@@ -86,25 +102,20 @@ class _PosScreenState extends State<PosScreen> {
     });
   }
 
+  // OGOHLANTIRISH TUZATILDI
   double _calculateTotal() {
-    double total = 0;
-    for (var item in _cartItems) {
-      total += item.totalPrice;
-    }
-    return total;
+    // 'sum' o'zgaruvchisi 'total' ga o'zgartirildi
+    return _cartItems.fold(0.0, (total, item) => total + item.totalPrice);
   }
 
-  // Savdoni yakunlash funksiyasi
   Future<void> _completeSale(String paymentMethod) async {
     if (_cartItems.isEmpty) return;
 
     final firestore = FirebaseFirestore.instance;
     final totalAmount = _calculateTotal();
-    // Savdo uchun yagona ID'ni tranzaksiyadan oldin yaratamiz
     final saleDoc = firestore.collection('sales').doc();
 
     try {
-      // Tranzaksiya yozish
       await firestore.runTransaction((transaction) async {
         for (final item in _cartItems) {
           final docRef =
@@ -116,19 +127,15 @@ class _PosScreenState extends State<PosScreen> {
                 "${item.product.name} do'kon qoldig'ida topilmadi.");
           }
 
-          final currentQuantity =
-              (snapshot.data()?['quantity'] as num? ?? 0).toDouble();
+          final currentQuantity = (snapshot.data()?['quantity'] as num? ?? 0);
           if (currentQuantity < item.quantity) {
             throw Exception("${item.product.name} dan yetarli qoldiq yo'q.");
           }
 
-          // Qoldiqni kamaytiramiz
-          transaction.update(docRef, {
-            'quantity': currentQuantity - item.quantity,
-          });
+          transaction
+              .update(docRef, {'quantity': currentQuantity - item.quantity});
         }
 
-        // Savdo haqidagi ma'lumotlarni oldindan yaratilgan ID bilan saqlaymiz
         transaction.set(saleDoc, {
           'saleId': saleDoc.id,
           'items': _cartItems
@@ -145,10 +152,11 @@ class _PosScreenState extends State<PosScreen> {
         });
       });
 
-      // Muvaffaqiyatli xabar va chek oynasini to'g'ri ID bilan ko'rsatish
       if (mounted) {
         _showReceiptDialog(totalAmount, _cartItems, saleDoc.id);
-        setState(() => _cartItems.clear());
+        setState(() {
+          _cartItems.clear();
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -206,7 +214,6 @@ class _PosScreenState extends State<PosScreen> {
     );
   }
 
-  // --- UI (Interfeys) ---
   @override
   Widget build(BuildContext context) {
     final isLargeScreen = MediaQuery.of(context).size.width > 800;
@@ -240,9 +247,18 @@ class _PosScreenState extends State<PosScreen> {
       child: Column(
         children: [
           TextField(
+            controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Mahsulotni qidirish...',
               prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                      },
+                    )
+                  : null,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -267,9 +283,22 @@ class _PosScreenState extends State<PosScreen> {
                       child: Text("Do'konda mahsulotlar mavjud emas."));
                 }
 
-                final products = snapshot.data!.docs
+                var products = snapshot.data!.docs
                     .map((doc) => Product.fromFirestore(doc))
                     .toList();
+
+                if (_searchQuery.isNotEmpty) {
+                  products = products.where((product) {
+                    return product.name
+                        .toLowerCase()
+                        .contains(_searchQuery.toLowerCase());
+                  }).toList();
+                }
+
+                if (products.isEmpty) {
+                  return const Center(
+                      child: Text("Qidiruv natijasida mahsulot topilmadi."));
+                }
 
                 return GridView.builder(
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -369,6 +398,7 @@ class _PosScreenState extends State<PosScreen> {
       child: InkWell(
         onTap: () => _addToCart(product),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: CachedNetworkImage(
@@ -388,10 +418,11 @@ class _PosScreenState extends State<PosScreen> {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(currencyFormatter.format(product.price),
-                      style: const TextStyle(color: Colors.grey)),
+                      style: const TextStyle(color: Colors.grey, fontSize: 11)),
                 ],
               ),
             ),

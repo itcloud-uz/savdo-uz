@@ -1,15 +1,17 @@
+// lib/employees_screen.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:savdo_uz/face_recognition_service.dart';
 
-// Xodim ma'lumotlari uchun model
 class Employee {
   final String id;
   final String name;
-  final String login; // Yangi login maydoni
+  final String login;
   final String role;
   final String pinCode;
   final String? imageUrl;
@@ -17,7 +19,7 @@ class Employee {
   Employee({
     required this.id,
     required this.name,
-    required this.login, // Yangi login maydoni
+    required this.login,
     required this.role,
     required this.pinCode,
     this.imageUrl,
@@ -28,7 +30,7 @@ class Employee {
     return Employee(
       id: doc.id,
       name: data['fullName'] ?? 'Nomsiz',
-      login: data['login'] ?? 'noma\'lum', // Yangi login maydoni
+      login: data['login'] ?? 'noma\'lum',
       role: data['role'] ?? 'Noma\'lum',
       pinCode: data['pinCode'] ?? '****',
       imageUrl: data['imageUrl'],
@@ -45,8 +47,16 @@ class EmployeesScreen extends StatefulWidget {
 
 class _EmployeesScreenState extends State<EmployeesScreen> {
   final _usersCollection = FirebaseFirestore.instance.collection('users');
+  final FaceRecognitionService _faceRecognitionService =
+      FaceRecognitionService();
+  bool _isProcessing = false;
 
-  // Xodim qo'shish/tahrirlash oynasini ochish
+  @override
+  void dispose() {
+    _faceRecognitionService.dispose();
+    super.dispose();
+  }
+
   void _showEmployeeDialog({Employee? employee}) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: employee?.name);
@@ -151,65 +161,81 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               ),
               actions: [
                 TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed:
+                        _isProcessing ? null : () => Navigator.pop(context),
                     child: const Text("Bekor qilish")),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      // OGOHLANTIRISHNI TUZATISH:
-                      // 'context' ga bog'liq bo'lgan obyektlarni async amaldan oldin saqlab olamiz
-                      final navigator = Navigator.of(context);
-                      final messenger = ScaffoldMessenger.of(context);
+                _isProcessing
+                    ? const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: CircularProgressIndicator(),
+                      )
+                    : ElevatedButton(
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => _isProcessing = true);
 
-                      try {
-                        String? imageUrl;
-                        if (pickedImage != null) {
-                          // Rasmni Firebase Storage'ga yuklash
-                          final ref = FirebaseStorage.instance
-                              .ref()
-                              .child('user_images')
-                              .child('${DateTime.now().toIso8601String()}.jpg');
-                          await ref.putFile(File(pickedImage!.path));
-                          imageUrl = await ref.getDownloadURL();
-                        } else {
-                          // Agar rasm tanlanmagan bo'lsa, avvalgi URLni saqlab qolamiz
-                          imageUrl = employee?.imageUrl;
-                        }
+                            final navigator = Navigator.of(context);
+                            final messenger = ScaffoldMessenger.of(context);
 
-                        if (employee == null) {
-                          await _usersCollection.add({
-                            'fullName': nameController.text,
-                            'login': loginController.text,
-                            'role': selectedRole,
-                            'pinCode': pinController.text,
-                            'imageUrl': imageUrl,
-                            'createdAt': Timestamp.now(),
-                          });
-                        } else {
-                          await _usersCollection.doc(employee.id).update({
-                            'fullName': nameController.text,
-                            'login': loginController.text,
-                            'role': selectedRole,
-                            'pinCode': pinController.text,
-                            'imageUrl': imageUrl,
-                          });
-                        }
+                            try {
+                              String? imageUrl = employee?.imageUrl;
+                              List? faceEmbedding;
 
-                        // OGOHLANTIRISHNI TUZATISH:
-                        // 'mounted' tekshiruvidan so'ng saqlab olingan obyektlardan foydalanamiz
-                        if (!mounted) return;
-                        navigator.pop();
-                      } catch (e) {
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                            SnackBar(content: Text("Xatolik: $e")));
-                      }
-                    }
-                  },
-                  child: const Text("Saqlash"),
-                ),
+                              if (pickedImage != null) {
+                                // METOD NOMI TUZATILDI
+                                faceEmbedding = await _faceRecognitionService
+                                    .processImageFileForEmbedding(pickedImage!);
+
+                                if (faceEmbedding == null) {
+                                  messenger.showSnackBar(const SnackBar(
+                                      content: Text(
+                                          "Rasmdan yuz topilmadi! Boshqa rasm tanlang."),
+                                      backgroundColor: Colors.red));
+                                  setDialogState(() => _isProcessing = false);
+                                  return;
+                                }
+
+                                final ref = FirebaseStorage.instance
+                                    .ref()
+                                    .child('user_images')
+                                    .child(
+                                        '${DateTime.now().toIso8601String()}.jpg');
+                                await ref.putFile(File(pickedImage!.path));
+                                imageUrl = await ref.getDownloadURL();
+                              }
+
+                              final userData = {
+                                'fullName': nameController.text,
+                                'login': loginController.text,
+                                'role': selectedRole,
+                                'pinCode': pinController.text,
+                                'imageUrl': imageUrl,
+                                if (faceEmbedding != null)
+                                  'faceEmbedding': faceEmbedding,
+                              };
+
+                              if (employee == null) {
+                                userData['createdAt'] = Timestamp.now();
+                                await _usersCollection.add(userData);
+                              } else {
+                                await _usersCollection
+                                    .doc(employee.id)
+                                    .update(userData);
+                              }
+
+                              if (!mounted) return;
+                              navigator.pop();
+                            } catch (e) {
+                              if (!mounted) return;
+                              messenger.showSnackBar(
+                                  SnackBar(content: Text("Xatolik: $e")));
+                            } finally {
+                              setDialogState(() => _isProcessing = false);
+                            }
+                          }
+                        },
+                        child: const Text("Saqlash"),
+                      ),
               ],
             );
           },
@@ -232,8 +258,6 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               child: const Text("Bekor qilish")),
           ElevatedButton(
             onPressed: () async {
-              // OGOHLANTIRISHNI TUZATISH:
-              // 'context' ga bog'liq bo'lgan obyektlarni async amaldan oldin saqlab olamiz
               final navigator = Navigator.of(context);
               final messenger = ScaffoldMessenger.of(context);
 
@@ -245,8 +269,6 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 }
                 await _usersCollection.doc(employee.id).delete();
 
-                // OGOHLANTIRISHNI TUZATISH:
-                // 'mounted' tekshiruvidan so'ng saqlab olingan obyektlardan foydalanamiz
                 if (!mounted) return;
                 navigator.pop();
               } catch (e) {
@@ -330,7 +352,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               backgroundImage: employee.imageUrl != null
                   ? CachedNetworkImageProvider(employee.imageUrl!)
                   : null,
-              child: employee.imageUrl == null
+              child: employee.imageUrl == null && employee.name.length >= 2
                   ? Text(employee.name.substring(0, 2).toUpperCase(),
                       style: const TextStyle(fontWeight: FontWeight.bold))
                   : null,

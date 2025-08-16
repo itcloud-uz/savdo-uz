@@ -1,0 +1,47 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // USERS kolleksiyasi uchun qoidalar
+    match /users/{userId} {
+      // Hozircha har qanday foydalanuvchi o'qishi va yozishi mumkin...
+      allow read, write: if true; 
+      
+      // TODO: Keyingi bosqichda faqat Adminlar uchun ruxsat beriladi
+      // allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    // PRODUCTS (Ombor) kolleksiyasi uchun qoidalar
+    match /products/{productId} {
+      allow read: if true;
+      // TUZATILDI: "String" "string" ga o'zgartirildi
+      allow write: if request.resource.data.name is string &&
+                       request.resource.data.unit is string &&
+                       request.resource.data.quantity is number &&
+                       request.resource.data.costPrice is number &&
+                       request.resource.data.sellingPrice is number;
+    }
+
+    // SHOP_STOCK (Do'kon) kolleksiyasi uchun qoidalar
+    match /shop_stock/{productId} {
+      allow read: if true;
+      // TUZATILDI: "String" "string" ga o'zgartirildi
+      allow write: if request.resource.data.name is string &&
+                       request.resource.data.unit is string &&
+                       request.resource.data.quantity is number &&
+                       request.resource.data.sellingPrice is number &&
+                       request.resource.data.productId is string;
+    }
+
+    // SALES (Savdolar) kolleksiyasi uchun qoidalar
+    match /sales/{saleId} {
+      allow read: if true;
+      // TUZATILDI: "String" "string" ga o'zgartirildi
+      allow create: if request.resource.data.totalAmount is number &&
+                       request.resource.data.paymentMethod is string &&
+                       request.resource.data.items is list;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// fl_chart kutubxonasini qo'shishimiz kerak.
-// pubspec.yaml fayliga fl_chart: ^0.68.0 qo'shing.
-// import 'package:fl_chart/fl_chart.dart'; // Hozircha kommentda qoldirilgan
+import 'package:fl_chart/fl_chart.dart';
+// import 'dart:math'; // <<-- KERAKSIZ IMPORT OLIB TASHLANDI
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -28,6 +27,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         if (isStartDate) {
           _startDate = picked;
         } else {
+          // Kunning oxirigacha bo'lgan vaqtni olish uchun
           _endDate =
               DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
         }
@@ -39,7 +39,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => Scaffold(
         appBar: AppBar(title: Text(title)),
-        body: reportContent,
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: reportContent,
+        ),
       ),
     ));
   }
@@ -47,8 +50,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     final DateFormat formatter = DateFormat('dd.MM.yyyy');
-
-    // Ekran o'lchamiga qarab dinamik ustunlar soni
     final isLargeScreen = MediaQuery.of(context).size.width > 800;
     final int crossAxisCount = isLargeScreen ? 2 : 1;
 
@@ -56,6 +57,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // Sana tanlash paneli
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -97,9 +99,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
           const SizedBox(height: 24),
+
+          // Hisobot turlari
           GridView.count(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 3, // Karta o'lchami
+            childAspectRatio: 3,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             shrinkWrap: true,
@@ -108,7 +112,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               _buildReportCard(
                 context,
                 title: "Umumiy Savdo Hisoboti",
-                subtitle: "Tanlangan davrdagi umumiy savdo va cheklar soni.",
+                subtitle: "Tanlangan davrdagi savdo dinamikasi va jami summa.",
                 icon: Icons.receipt_long,
                 onTap: () =>
                     _showReport("Umumiy Savdo Hisoboti", _buildSalesReport()),
@@ -120,16 +124,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 icon: Icons.inventory_2_outlined,
                 onTap: () =>
                     _showReport("Mahsulotlar Hisoboti", _buildProductsReport()),
-              ),
-              _buildReportCard(
-                context,
-                title: "Xodimlar Hisoboti",
-                subtitle: "Har bir xodimning savdo ko'rsatkichlari.",
-                icon: Icons.people_outline,
-                onTap: () => _showReport(
-                    "Xodimlar Hisoboti",
-                    const Center(
-                        child: Text("Bu hisobot tez orada tayyor bo'ladi."))),
               ),
             ],
           )
@@ -144,7 +138,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       required IconData icon,
       required VoidCallback onTap}) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
       child: ListTile(
         leading: CircleAvatar(child: Icon(icon)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -155,12 +148,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  // Savdo hisoboti
   Widget _buildSalesReport() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
           .collection('sales')
           .where('saleDate', isGreaterThanOrEqualTo: _startDate)
           .where('saleDate', isLessThanOrEqualTo: _endDate)
+          .orderBy('saleDate')
           .get(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -173,39 +168,145 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
         double totalRevenue = 0;
         int totalChecks = snapshot.data!.docs.length;
+        final Map<DateTime, double> dailySales = {};
+
         for (var doc in snapshot.data!.docs) {
-          totalRevenue += (doc.data() as Map<String, dynamic>)['totalAmount'];
+          final data = doc.data() as Map<String, dynamic>;
+          totalRevenue += data['totalAmount'];
+          final saleDate = (data['saleDate'] as Timestamp).toDate();
+          final day = DateTime(saleDate.year, saleDate.month, saleDate.day);
+          dailySales[day] = (dailySales[day] ?? 0) + data['totalAmount'];
         }
+
+        final List<FlSpot> spots = dailySales.entries.map((entry) {
+          return FlSpot(
+              entry.key.millisecondsSinceEpoch.toDouble(), entry.value);
+        }).toList();
+
         final currencyFormatter = NumberFormat.currency(
             locale: 'uz_UZ', symbol: "so'm", decimalDigits: 0);
 
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.attach_money,
-                    color: Colors.green, size: 32),
-                title: const Text("Umumiy Savdo"),
-                trailing: Text(currencyFormatter.format(totalRevenue),
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
+        return ListView(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.attach_money,
+                          color: Colors.green, size: 32),
+                      title: const Text("Umumiy Savdo"),
+                      subtitle: Text(currencyFormatter.format(totalRevenue),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.receipt,
+                          color: Colors.blue, size: 32),
+                      title: const Text("Cheklar Soni"),
+                      subtitle: Text(totalChecks.toString(),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text("Kunlik Savdo Dinamikasi",
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 300,
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: LineChart(
+                    LineChartData(
+                      gridData: const FlGridData(show: true),
+                      titlesData: FlTitlesData(
+                        rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            interval: _calculateInterval(dailySales.keys),
+                            getTitlesWidget: (value, meta) {
+                              final date = DateTime.fromMillisecondsSinceEpoch(
+                                  value.toInt());
+                              return SideTitleWidget(
+                                axisSide: meta.axisSide,
+                                child: Text(DateFormat('dd.MM').format(date)),
+                              );
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 80,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                  "${(value / 1000).toStringAsFixed(0)}k",
+                                  style: const TextStyle(fontSize: 12));
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(
+                          show: true,
+                          border: Border.all(color: Colors.grey.shade300)),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: spots,
+                          isCurved: true,
+                          color: Colors.blue,
+                          barWidth: 4,
+                          isStrokeCapRound: true,
+                          dotData: const FlDotData(show: false),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            // 'withOpacity' OGOHLANTIRISHI TUZATILDI
+                            color: const Color.fromRGBO(33, 150, 243, 0.3),
+                          ),
+                        ),
+                      ],
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              return LineTooltipItem(
+                                currencyFormatter.format(spot.y),
+                                const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              ListTile(
-                leading:
-                    const Icon(Icons.receipt, color: Colors.blue, size: 32),
-                title: const Text("Cheklar Soni"),
-                trailing: Text(totalChecks.toString(),
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 
+  // Mahsulotlar hisoboti
   Widget _buildProductsReport() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -238,15 +339,34 @@ class _ReportsScreenState extends State<ReportsScreen> {
           itemCount: sortedProducts.length,
           itemBuilder: (context, index) {
             final product = sortedProducts[index];
-            return ListTile(
-              leading: CircleAvatar(child: Text((index + 1).toString())),
-              title: Text(product.key),
-              trailing: Text("${product.value} dona sotilgan",
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            return Card(
+              child: ListTile(
+                leading: CircleAvatar(child: Text((index + 1).toString())),
+                title: Text(product.key),
+                trailing: Text("${product.value} dona sotilgan",
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
             );
           },
         );
       },
     );
+  }
+
+  double _calculateInterval(Iterable<DateTime> dates) {
+    if (dates.length <= 1) {
+      return const Duration(days: 1).inMilliseconds.toDouble();
+    }
+    final minDate = dates.reduce((a, b) => a.isBefore(b) ? a : b);
+    final maxDate = dates.reduce((a, b) => a.isAfter(b) ? a : b);
+    final difference = maxDate.difference(minDate).inDays;
+
+    if (difference <= 7) {
+      return const Duration(days: 1).inMilliseconds.toDouble();
+    } else if (difference <= 30) {
+      return const Duration(days: 3).inMilliseconds.toDouble();
+    } else {
+      return const Duration(days: 7).inMilliseconds.toDouble();
+    }
   }
 }
