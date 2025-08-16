@@ -11,18 +11,20 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _loginController = TextEditingController();
   final _pinController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _loginController.dispose();
     _pinController.dispose();
     super.dispose();
   }
 
-  // PIN-kod orqali kirish funksiyasi
-  Future<void> _loginWithPin() async {
+  // Login va PIN-kod orqali kirish funksiyasi
+  Future<void> _loginWithCredentials() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -30,24 +32,27 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      final login = _loginController.text;
       final pin = _pinController.text;
       final usersCollection = FirebaseFirestore.instance.collection('users');
 
-      // Kiritilgan PIN-kod bo'yicha xodimni qidiramiz
-      final querySnapshot =
-          await usersCollection.where('pinCode', isEqualTo: pin).limit(1).get();
+      // Kiritilgan login va PIN-kod bo'yicha xodimni qidiramiz
+      final querySnapshot = await usersCollection
+          .where('login',
+              isEqualTo: login) // 'login' maydoni bo'yicha qidiramiz
+          .where('pinCode', isEqualTo: pin)
+          .limit(1)
+          .get();
 
       if (querySnapshot.docs.isNotEmpty && mounted) {
-        // Agar xodim topilsa
         final userDoc = querySnapshot.docs.first;
         final userRole = userDoc.data()['role'] as String;
         _navigateToMainScreen(context, userRole);
       } else {
-        // Agar xodim topilmasa
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("PIN-kod noto'g'ri!"),
+              content: Text("Login yoki PIN-kod noto'g'ri!"),
               backgroundColor: Colors.red,
             ),
           );
@@ -104,50 +109,64 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 16, color: Colors.grey)),
                   const SizedBox(height: 40),
+
+                  // Yuzni skanerlash bo'limi
+                  _buildSectionTitle('Yuzni Skanerlash'),
+                  const SizedBox(height: 16),
                   _buildRoleButton(context,
                       label: 'Yuzni Skanerlash',
                       color: Colors.blue,
                       onPressed: () => _navigateToFaceScan(context)),
-                  const SizedBox(height: 24),
-                  const Row(
-                    children: [
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child:
-                            Text('yoki', style: TextStyle(color: Colors.grey)),
-                      ),
-                      Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
+
+                  // Login va PIN-kod bo'limi
+                  _buildSectionTitle('Login va PIN-kod orqali'),
+                  const SizedBox(height: 16),
                   Form(
                     key: _formKey,
-                    child: TextFormField(
-                      controller: _pinController,
-                      obscureText: true,
-                      maxLength: 4,
-                      decoration: const InputDecoration(
-                        labelText: 'PIN-kod',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.lock_outline),
-                        counterText:
-                            "", // 4 ta belgidan keyingi hisoblagichni yashirish
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.length < 4) {
-                          return 'PIN-kod 4 xonali bo\'lishi kerak';
-                        }
-                        return null;
-                      },
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _loginController,
+                          decoration: const InputDecoration(
+                            labelText: 'Login',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Iltimos, loginni kiriting";
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _pinController,
+                          obscureText: true,
+                          maxLength: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'PIN-kod',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.lock_outline),
+                            counterText: "",
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value == null || value.length < 4) {
+                              return 'PIN-kod 4 xonali bo\'lishi kerak';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   _isLoading
                       ? const Center(child: CircularProgressIndicator())
                       : ElevatedButton.icon(
-                          onPressed: _loginWithPin,
+                          onPressed: _loginWithCredentials,
                           icon: const Icon(Icons.login),
                           label: const Text('Kirish'),
                           style: ElevatedButton.styleFrom(
@@ -165,7 +184,27 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // XATO TUZATILDI: Funksiya to'liq yozildi
+  // Bo'lim sarlavhasi uchun yordamchi funksiya
+  Widget _buildSectionTitle(String title) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            title,
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87),
+          ),
+        ),
+        const Divider(),
+      ],
+    );
+  }
+
   Widget _buildRoleButton(BuildContext context,
       {required String label,
       required Color color,

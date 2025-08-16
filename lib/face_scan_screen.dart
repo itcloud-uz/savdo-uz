@@ -33,13 +33,23 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
+      if (cameras.isEmpty) {
+        if (!mounted) return;
+        setState(() => _statusMessage = "Kamera topilmadi.");
+        return;
+      }
+      // Old kamerani topishga harakat qilamiz, bo'lmasa birinchi kamerani olamiz.
       final frontCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
 
-      _cameraController = CameraController(frontCamera, ResolutionPreset.medium,
-          enableAudio: false);
+      _cameraController = CameraController(
+        frontCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.nv21, // Android uchun mos format
+      );
       _faceDetector = FaceDetector(
           options:
               FaceDetectorOptions(performanceMode: FaceDetectorMode.accurate));
@@ -51,6 +61,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         _isCameraInitialized = true;
         _statusMessage = "Iltimos, yuzingizni doira ichiga joylashtiring";
       });
+      // Agar kamera ishga tushgan bo'lsa, imageStream'ni boshlaymiz
       _cameraController!.startImageStream(_processImage);
     } catch (e) {
       if (!mounted) return;
@@ -64,7 +75,8 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final inputImage = InputImage.fromBytes(
+      // InputImage yaratish uchun CameraImage ma'lumotlarini o'zgartiramiz
+      final InputImage inputImage = InputImage.fromBytes(
         bytes: image.planes.first.bytes,
         metadata: InputImageMetadata(
           size: Size(image.width.toDouble(), image.height.toDouble()),
@@ -91,6 +103,9 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
           );
         }
       }
+    } catch (e) {
+      // Xatolikni console'da chop etish va foydalanuvchiga xabar berish
+      debugPrint("Yuzni aniqlashda xatolik: $e");
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
