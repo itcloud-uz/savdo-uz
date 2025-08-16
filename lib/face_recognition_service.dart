@@ -7,7 +7,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 // ignore: unnecessary_import
 import 'package:image_picker/image_picker.dart';
-import 'package:tflite_flutter_plus/tflite_flutter_plus.dart'; // <--- O'ZGARGAN QATOR
+import 'package:tflite_flutter/tflite_flutter.dart'; // <--- O'ZGARGAN QATOR
 
 class FaceRecognitionService {
   // ... qolgan barcha kod o'zgarishsiz qoladi ...

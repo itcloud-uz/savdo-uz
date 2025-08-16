@@ -1,8 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class InventoryScreen extends StatelessWidget {
+// Qidiruv funksiyasi uchun StatefulWidget'ga o'zgartirdik
+class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
+
+  @override
+  State<InventoryScreen> createState() => _InventoryScreenState();
+}
+
+class _InventoryScreenState extends State<InventoryScreen> {
+  // --- QIDIRUV UCHUN YANGI QO'SHIMCHALAR ---
+  final _searchController = TextEditingController();
+  String _searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+  // --- QIDIRUV QISMI TUGADI ---
 
   @override
   Widget build(BuildContext context) {
@@ -30,20 +57,50 @@ class InventoryScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: TabBarView(
+        // Qidiruv maydonini va TabBarView'ni Column'ga o'radik
+        body: Column(
           children: [
-            // 1-varaq: Do'kon
-            _buildInventoryList(shopStream, "Do'konda mahsulotlar mavjud emas"),
-            // 2-varaq: Omborxona
-            _buildInventoryList(
-                warehouseStream, "Omborda mahsulotlar mavjud emas"),
+            // --- YANGI QIDIRUV MAYDONI ---
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Mahsulotni qidirish...',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[200],
+                ),
+              ),
+            ),
+            // --- QIDIRUV MAYDONI TUGADI ---
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildInventoryList(
+                      shopStream, "Do'konda mahsulotlar mavjud emas"),
+                  _buildInventoryList(
+                      warehouseStream, "Omborda mahsulotlar mavjud emas"),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // Qoldiqlar ro'yxatini chizuvchi umumiy vidjet
+  // Qoldiqlar ro'yxatini chizuvchi umumiy vidjet (qidiruv mantig'i bilan)
   Widget _buildInventoryList(
       Stream<QuerySnapshot> stream, String emptyMessage) {
     return StreamBuilder<QuerySnapshot>(
@@ -59,11 +116,32 @@ class InventoryScreen extends StatelessWidget {
           return Center(child: Text(emptyMessage));
         }
 
+        // --- QIDIRUV BO'YICHA FILTRLASH ---
+        var documents = snapshot.data!.docs;
+        if (_searchQuery.isNotEmpty) {
+          documents = documents.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final name = (data['name'] as String?)?.toLowerCase() ?? '';
+            return name.contains(_searchQuery.toLowerCase());
+          }).toList();
+        }
+
+        if (documents.isEmpty) {
+          return const Center(
+              child: Text("Qidiruv bo'yicha mahsulot topilmadi."));
+        }
+        // --- FILTRLASH TUGADI ---
+
         return ListView(
-          padding: const EdgeInsets.all(8.0),
-          children: snapshot.data!.docs.map((DocumentSnapshot document) {
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          children: documents.map((DocumentSnapshot document) {
             Map<String, dynamic> data =
                 document.data()! as Map<String, dynamic>;
+            // Narxni to'g'ri maydondan olish (do'kon uchun 'sellingPrice', ombor uchun 'costPrice')
+            final price = data.containsKey('sellingPrice')
+                ? data['sellingPrice']
+                : data['costPrice'];
+
             return Card(
               child: ListTile(
                 leading: CircleAvatar(
@@ -71,8 +149,8 @@ class InventoryScreen extends StatelessWidget {
                 ),
                 title: Text(data['name'] ?? 'Nomsiz',
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text(
-                    "Narxi: ${data['sellingPrice']?.toStringAsFixed(0) ?? '0'} so'm"),
+                subtitle:
+                    Text("Narxi: ${price?.toStringAsFixed(0) ?? '0'} so'm"),
                 trailing: Text(
                   "${data['quantity']} ${data['unit']}",
                   style: const TextStyle(

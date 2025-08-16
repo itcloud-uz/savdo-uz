@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
-// import 'dart:math'; // <<-- KERAKSIZ IMPORT OLIB TASHLANDI
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -27,7 +26,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
         if (isStartDate) {
           _startDate = picked;
         } else {
-          // Kunning oxirigacha bo'lgan vaqtni olish uchun
           _endDate =
               DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
         }
@@ -57,7 +55,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          // Sana tanlash paneli
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -99,8 +96,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Hisobot turlari
           GridView.count(
             crossAxisCount: crossAxisCount,
             childAspectRatio: 3,
@@ -148,7 +143,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // Savdo hisoboti
   Widget _buildSalesReport() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -241,14 +235,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             showTitles: true,
                             reservedSize: 30,
                             interval: _calculateInterval(dailySales.keys),
+                            // --- XATOLIK TUZATILGAN QISM ---
                             getTitlesWidget: (value, meta) {
                               final date = DateTime.fromMillisecondsSinceEpoch(
                                   value.toInt());
-                              return SideTitleWidget(
-                                axisSide: meta.axisSide,
+                              // SideTitleWidget o'rniga to'g'ridan-to'g'ri Text vidjetini qaytaramiz
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
                                 child: Text(DateFormat('dd.MM').format(date)),
                               );
                             },
+                            // --- TUZATISH TUGADI ---
                           ),
                         ),
                         leftTitles: AxisTitles(
@@ -276,7 +273,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(
                             show: true,
-                            // 'withOpacity' OGOHLANTIRISHI TUZATILDI
                             color: const Color.fromRGBO(33, 150, 243, 0.3),
                           ),
                         ),
@@ -306,7 +302,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  // Mahsulotlar hisoboti
   Widget _buildProductsReport() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance

@@ -1,5 +1,3 @@
-// lib/face_scan_screen.dart
-
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -7,8 +5,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:savdo_uz/main_screen.dart';
 import 'package:savdo_uz/face_recognition_service.dart';
-// ignore: unnecessary_import
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart'; // <-- KERAKSIZ IMPORT OLIB TASHLANDI
 
 class FaceScanScreen extends StatefulWidget {
   const FaceScanScreen({super.key});
@@ -18,7 +15,6 @@ class FaceScanScreen extends StatefulWidget {
 }
 
 class _FaceScanScreenState extends State<FaceScanScreen> {
-  // ... qolgan kod o'zgarishsiz qoladi
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
   String _statusMessage = "Kamerani ishga tushirish...";
@@ -50,27 +46,28 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
 
   Future<void> _loadKnownUsers() async {
     try {
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('faceEmbedding', isNotEqualTo: null)
-          .get();
+      final querySnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
-        final embedding = (data['faceEmbedding'] as List<dynamic>)
-            .map((e) => e as double)
-            .toList();
+        if (data.containsKey('faceEmbedding') &&
+            data['faceEmbedding'] != null) {
+          final embedding = (data['faceEmbedding'] as List<dynamic>)
+              .map((e) => e as double)
+              .toList();
 
-        _knownUsers.add({
-          "fullName": data['fullName'],
-          "role": data['role'],
-          "embedding": embedding,
-        });
+          _knownUsers.add({
+            "fullName": data['fullName'],
+            "role": data['role'],
+            "embedding": embedding,
+          });
+        }
       }
       setState(() {
         _areUsersLoaded = true;
         _statusMessage = _knownUsers.isEmpty
-            ? "Tizimda ro'yxatdan o'tgan yuzlar topilmadi"
+            ? "Tizimda yuz izi saqlangan xodimlar topilmadi"
             : "Iltimos, yuzingizni doira ichiga joylashtiring";
       });
     } catch (e) {
