@@ -23,15 +23,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         return windows;
       case TargetPlatform.linux:
@@ -72,6 +66,24 @@ class DefaultFirebaseOptions {
     authDomain: 'savdo-uz-app.firebaseapp.com',
     storageBucket: 'savdo-uz-app.firebasestorage.app',
     measurementId: 'G-N10RL7E0L1',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyAzDT7zOWpH6N3eO2Y7NIJGdPscWCmJMz8',
+    appId: '1:280839047582:ios:7ea8e94fe194d4115bae8f',
+    messagingSenderId: '280839047582',
+    projectId: 'savdo-uz-app',
+    storageBucket: 'savdo-uz-app.firebasestorage.app',
+    iosBundleId: 'com.example.savdoUz',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAzDT7zOWpH6N3eO2Y7NIJGdPscWCmJMz8',
+    appId: '1:280839047582:ios:7ea8e94fe194d4115bae8f',
+    messagingSenderId: '280839047582',
+    projectId: 'savdo-uz-app',
+    storageBucket: 'savdo-uz-app.firebasestorage.app',
+    iosBundleId: 'com.example.savdoUz',
   );
 
 }

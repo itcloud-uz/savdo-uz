@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:savdo_uz/login_screen.dart';
 
-// Firebase bilan ishlash uchun bu qatorlar kerak bo'ladi
-// import 'package:firebase_core/firebase_core.dart';
-// import 'firebase_options.dart';
+// Firebase bilan ishlash uchun kerakli kutubxonalarni import qilamiz
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 void main() async {
+  // Loyiha ishga tushishidan oldin barcha bindinglarning to'g'ri ishlashini ta'minlaymiz
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase sozlamalari yangi loyihada qaytadan qilinishi kerak bo'ladi
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform,
-  // );
+  // Firebase'ni ishga tushiramiz
+  // Bu qism Firebase'ni loyihaga ulash uchun juda muhim
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint("Firebase'ni ishga tushirishda xatolik yuz berdi: $e");
+    // Agar Firebase ishga tushmasa ham, ilova ishga tushishi uchun
+    // faqat konsolga xato yozib qo'yamiz.
+  }
 
   runApp(const MyApp());
 }

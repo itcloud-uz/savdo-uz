@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "280839047582",
+    "project_id": "savdo-uz-app",
+    "storage_bucket": "savdo-uz-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:280839047582:android:886f1fa403ce9bf65bae8f",
+        "android_client_info": {
+          "package_name": "com.example.savdo_uz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAd90wTsXmBsqj-eFjWt4aK5X3mtXi3ojE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
