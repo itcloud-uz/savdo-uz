@@ -4,7 +4,9 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:savdo_uz/main_screen.dart';
 import 'package:flutter/foundation.dart';
-// import 'dart:ui'; // Ushbu import keraksizligi sababli olib tashlandi
+// Keraksiz importlar olib tashlandi
+// import 'dart:ui';
+// import 'dart:typed_data';
 
 class FaceScanScreen extends StatefulWidget {
   const FaceScanScreen({super.key});
@@ -95,11 +97,12 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      final WriteBuffer allBytes = WriteBuffer();
-      for (final Plane plane in image.planes) {
-        allBytes.putUint8List(plane.bytes);
-      }
-      final bytes = allBytes.done().buffer.asUint8List();
+      // Keraksiz o'zgaruvchilar va ularga tegishli kod olib tashlandi
+      // final WriteBuffer allBytes = WriteBuffer();
+      // for (final Plane plane in image.planes) {
+      //   allBytes.putUint8List(plane.bytes);
+      // }
+      // final bytes = allBytes.done().buffer.asUint8List();
 
       final Size imageSize =
           Size(image.width.toDouble(), image.height.toDouble());
@@ -116,8 +119,9 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         orElse: () => InputImageFormat.nv21,
       );
 
+      // Yangilangan inputImage yaratish usuli
       final inputImage = InputImage.fromBytes(
-        bytes: bytes,
+        bytes: image.planes.first.bytes,
         metadata: InputImageMetadata(
           size: imageSize,
           rotation: imageRotation,
