@@ -23,8 +23,11 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
   // Miqdorni kiritish uchun oyna ochish
   Future<void> _showQuantityDialog(DocumentSnapshot productDoc) async {
     final quantityController = TextEditingController();
-    final productData = productDoc.data() as Map<String, dynamic>;
-    final availableQuantity = (productData['quantity'] ?? 0.0).toDouble();
+    final productData = productDoc.data() as Map<String, dynamic>?;
+    if (productData == null) return;
+
+    final availableQuantity =
+        (productData['quantity'] as num?)?.toDouble() ?? 0.0;
 
     final quantity = await showDialog<double>(
       context: context,
@@ -40,9 +43,8 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Bekor qilish"),
-            ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Bekor qilish")),
             ElevatedButton(
               onPressed: () {
                 final enteredQuantity =
@@ -97,30 +99,54 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
               firestore.collection('shop_stock').doc(item.productDoc.id);
 
           final warehouseSnapshot = await transaction.get(warehouseDocRef);
-          if (!warehouseSnapshot.exists)
-            throw Exception("${item.productDoc['name']} omborda topilmadi!");
+          if (!warehouseSnapshot.exists) {
+            throw Exception(
+                "${item.productDoc.get('name')} omborda topilmadi!");
+          }
 
           final warehouseData =
-              warehouseSnapshot.data() as Map<String, dynamic>;
-          final currentWarehouseQty =
-              (warehouseData['quantity'] ?? 0.0).toDouble();
+              warehouseSnapshot.data(); // Keraksiz cast olib tashlandi
+          if (warehouseData == null) {
+            throw Exception(
+                "${item.productDoc.get('name')} ma'lumotlari topilmadi!");
+          }
 
+          // Ma'lumot turini to'g'ri olish uchun ishonchli usul
+          final currentWarehouseQty =
+              (warehouseData['quantity'] as num?)?.toDouble() ?? 0.0;
+
+          if (currentWarehouseQty < item.quantity) {
+            throw Exception(
+                "${item.productDoc.get('name')} mahsulotida yetarli qoldiq yo'q!");
+          }
+
+          // Ombordagi qoldiqni kamaytiramiz
           transaction.update(warehouseDocRef,
               {'quantity': currentWarehouseQty - item.quantity});
 
+          // Do'kondagi qoldiqni yangilaymiz yoki yangi mahsulot yaratamiz
           final shopSnapshot = await transaction.get(shopDocRef);
           if (shopSnapshot.exists) {
-            final shopData = shopSnapshot.data() as Map<String, dynamic>;
-            final currentShopQty = (shopData['quantity'] ?? 0.0).toDouble();
+            final shopData =
+                shopSnapshot.data(); // Keraksiz cast olib tashlandi
+            if (shopData == null) {
+              throw Exception("Do'kon mahsuloti ma'lumotlari buzilgan!");
+            }
+            // Ma'lumot turini to'g'ri olish uchun ishonchli usul
+            final currentShopQty =
+                (shopData['quantity'] as num?)?.toDouble() ?? 0.0;
             transaction.update(
                 shopDocRef, {'quantity': currentShopQty + item.quantity});
           } else {
             transaction.set(shopDocRef, {
-              'name': warehouseData['name'],
-              'unit': warehouseData['unit'],
-              'sellingPrice': warehouseData['sellingPrice'],
+              'name': (warehouseData['name'] as String?) ?? 'Nomsiz mahsulot',
+              'unit': (warehouseData['unit'] as String?) ?? 'dona',
+              'sellingPrice':
+                  (warehouseData['sellingPrice'] as num?)?.toDouble() ?? 0.0,
               'quantity': item.quantity,
-              'productId': item.productDoc.id, // Asosiy mahsulotga havola
+              'productId': item.productDoc.id,
+              'imageUrl': (warehouseData['imageUrl']
+                  as String?), // imageUrl null bo'lishi mumkin
             });
           }
         }
@@ -136,8 +162,11 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Xato xabarini foydalanuvchiga aniqroq ko'rsatamiz
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Xatolik: $e"), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text("O'tkazishda xatolik: ${e.toString()}"),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -185,12 +214,18 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
                     final doc = snapshot.data!.docs[index];
-                    final data = doc.data() as Map<String, dynamic>;
+                    final data = doc.data() as Map<String, dynamic>?;
+                    if (data == null) {
+                      return const SizedBox
+                          .shrink(); // Ma'lumot yo'q bo'lsa, bo'sh joy qaytaramiz
+                    }
+                    // Ma'lumot turini to'g'ri olish uchun ishonchli usul
+                    final quantity =
+                        (data['quantity'] as num?)?.toDouble() ?? 0.0;
                     return Card(
                       child: ListTile(
-                        title: Text(data['name']),
-                        subtitle:
-                            Text("Qoldiq: ${data['quantity']} ${data['unit']}"),
+                        title: Text((data['name'] as String?) ?? 'Nomsiz'),
+                        subtitle: Text("Qoldiq: $quantity ${data['unit']}"),
                         trailing: IconButton(
                           icon: const Icon(Icons.add_circle_outline,
                               color: Colors.green),
@@ -225,10 +260,12 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                     itemBuilder: (context, index) {
                       final item = _transferList[index];
                       final data =
-                          item.productDoc.data() as Map<String, dynamic>;
+                          item.productDoc.data() as Map<String, dynamic>?;
+                      if (data == null) return const SizedBox.shrink();
+
                       return Card(
                         child: ListTile(
-                          title: Text(data['name']),
+                          title: Text((data['name'] as String?) ?? 'Nomsiz'),
                           subtitle:
                               Text("Miqdor: ${item.quantity} ${data['unit']}"),
                           trailing: IconButton(

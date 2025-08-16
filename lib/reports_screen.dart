@@ -146,11 +146,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
           .where('saleDate', isLessThanOrEqualTo: _endDate)
           .get(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
               child: Text("Bu davr uchun savdo ma'lumotlari topilmadi."));
+        }
 
         double totalRevenue = 0;
         int totalChecks = snapshot.data!.docs.length;
@@ -195,11 +197,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
           .where('saleDate', isLessThanOrEqualTo: _endDate)
           .get(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting)
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
               child: Text("Bu davr uchun ma'lumotlar topilmadi."));
+        }
 
         Map<String, int> productSales = {};
         for (var doc in snapshot.data!.docs) {

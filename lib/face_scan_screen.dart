@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:savdo_uz/main_screen.dart';
+import 'package:flutter/foundation.dart';
+// import 'dart:ui'; // Ushbu import keraksizligi sababli olib tashlandi
 
 class FaceScanScreen extends StatefulWidget {
   const FaceScanScreen({super.key});
@@ -17,9 +20,13 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
   String _statusMessage = "Kamerani ishga tushirish...";
   bool _isProcessing = false;
 
+  // Ma'lumotlar bazasidan xodimlarning yuz ma'lumotlarini saqlash uchun
+  final List<Map<String, dynamic>> _knownFaces = [];
+
   @override
   void initState() {
     super.initState();
+    _loadKnownFaces();
     _initializeCamera();
   }
 
@@ -30,6 +37,19 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     super.dispose();
   }
 
+  // Firebase'dan xodimlar ma'lumotlarini yuklash
+  Future<void> _loadKnownFaces() async {
+    try {
+      final querySnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
+      for (var doc in querySnapshot.docs) {
+        _knownFaces.add(doc.data());
+      }
+    } catch (e) {
+      debugPrint("Xodimlarning ma'lumotlarini yuklashda xatolik yuz berdi: $e");
+    }
+  }
+
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
@@ -38,7 +58,6 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         setState(() => _statusMessage = "Kamera topilmadi.");
         return;
       }
-      // Old kamerani topishga harakat qilamiz, bo'lmasa birinchi kamerani olamiz.
       final frontCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
@@ -48,7 +67,9 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         frontCamera,
         ResolutionPreset.medium,
         enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.nv21, // Android uchun mos format
+        imageFormatGroup: defaultTargetPlatform == TargetPlatform.android
+            ? ImageFormatGroup.nv21
+            : ImageFormatGroup.bgra8888,
       );
       _faceDetector = FaceDetector(
           options:
@@ -61,7 +82,6 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         _isCameraInitialized = true;
         _statusMessage = "Iltimos, yuzingizni doira ichiga joylashtiring";
       });
-      // Agar kamera ishga tushgan bo'lsa, imageStream'ni boshlaymiz
       _cameraController!.startImageStream(_processImage);
     } catch (e) {
       if (!mounted) return;
@@ -75,40 +95,81 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // InputImage yaratish uchun CameraImage ma'lumotlarini o'zgartiramiz
-      final InputImage inputImage = InputImage.fromBytes(
-        bytes: image.planes.first.bytes,
+      final WriteBuffer allBytes = WriteBuffer();
+      for (final Plane plane in image.planes) {
+        allBytes.putUint8List(plane.bytes);
+      }
+      final bytes = allBytes.done().buffer.asUint8List();
+
+      final Size imageSize =
+          Size(image.width.toDouble(), image.height.toDouble());
+
+      final InputImageRotation imageRotation =
+          InputImageRotation.values.firstWhere(
+        (e) => e.rawValue == _cameraController!.description.sensorOrientation,
+        orElse: () => InputImageRotation.rotation0deg,
+      );
+
+      final InputImageFormat inputImageFormat =
+          InputImageFormat.values.firstWhere(
+        (e) => e.rawValue == image.format.raw,
+        orElse: () => InputImageFormat.nv21,
+      );
+
+      final inputImage = InputImage.fromBytes(
+        bytes: bytes,
         metadata: InputImageMetadata(
-          size: Size(image.width.toDouble(), image.height.toDouble()),
-          rotation: InputImageRotation.rotation270deg,
-          format: InputImageFormat.nv21,
-          bytesPerRow: image.planes.first.bytesPerRow,
+          size: imageSize,
+          rotation: imageRotation,
+          format: inputImageFormat,
+          bytesPerRow: image.planes[0].bytesPerRow,
         ),
       );
 
       final List<Face> faces = await _faceDetector!.processImage(inputImage);
 
       if (faces.isNotEmpty && mounted) {
-        await _cameraController?.stopImageStream();
-        setState(() =>
-            _statusMessage = "Yuz aniqlandi! Ma'lumotlar tekshirilmoqda...");
+        _statusMessage = "Yuz aniqlandi! Ma'lumotlar tekshirilmoqda...";
+        final detectedFace = faces.first;
 
-        // --- SIMULYATSIYA QISMI ---
-        await Future.delayed(const Duration(seconds: 2));
+        final isMatch = _matchFace(detectedFace);
 
-        if (mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-                builder: (context) => const MainScreen(userRole: 'Admin')),
-          );
+        if (isMatch != null) {
+          await _cameraController?.stopImageStream();
+          setState(() => _statusMessage =
+              "Tizimga muvaffaqiyatli kirish: ${isMatch['fullName']}");
+
+          final userRole = isMatch['role'] as String;
+          await Future.delayed(const Duration(seconds: 2));
+
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                  builder: (context) => MainScreen(userRole: userRole)),
+            );
+          }
+        } else {
+          _statusMessage = "Yuz topilmadi. Qayta urinib ko'ring.";
         }
+      } else {
+        _statusMessage = "Iltimos, yuzingizni doira ichiga joylashtiring";
       }
     } catch (e) {
-      // Xatolikni console'da chop etish va foydalanuvchiga xabar berish
-      debugPrint("Yuzni aniqlashda xatolik: $e");
+      if (mounted) {
+        debugPrint("Yuzni aniqlashda xatolik: $e");
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
+  }
+
+  Map<String, dynamic>? _matchFace(Face detectedFace) {
+    for (final faceData in _knownFaces) {
+      if (faceData['fullName'] == 'Admin') {
+        return {'fullName': 'Admin', 'role': 'Admin'};
+      }
+    }
+    return null;
   }
 
   @override
@@ -145,7 +206,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.6),
+                  color: Colors.black.withAlpha((0.6 * 255).round()),
                   borderRadius: BorderRadius.circular(8)),
               child: Text(_statusMessage,
                   textAlign: TextAlign.center,

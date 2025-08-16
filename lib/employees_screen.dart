@@ -9,6 +9,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 class Employee {
   final String id;
   final String name;
+  final String login; // Yangi login maydoni
   final String role;
   final String pinCode;
   final String? imageUrl;
@@ -16,6 +17,7 @@ class Employee {
   Employee({
     required this.id,
     required this.name,
+    required this.login, // Yangi login maydoni
     required this.role,
     required this.pinCode,
     this.imageUrl,
@@ -26,6 +28,7 @@ class Employee {
     return Employee(
       id: doc.id,
       name: data['fullName'] ?? 'Nomsiz',
+      login: data['login'] ?? 'noma\'lum', // Yangi login maydoni
       role: data['role'] ?? 'Noma\'lum',
       pinCode: data['pinCode'] ?? '****',
       imageUrl: data['imageUrl'],
@@ -47,6 +50,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   void _showEmployeeDialog({Employee? employee}) {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: employee?.name);
+    final loginController = TextEditingController(text: employee?.login);
     final pinController = TextEditingController(text: employee?.pinCode);
     String selectedRole = employee?.role ?? 'Sotuvchi';
     final roles = ['Sotuvchi', 'Omborchi', 'Admin'];
@@ -99,8 +103,23 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                         controller: nameController,
                         decoration:
                             const InputDecoration(labelText: "To'liq ismi"),
-                        validator: (value) =>
-                            value!.isEmpty ? "Ismni kiriting" : null,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Ismni kiriting";
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: loginController,
+                        decoration: const InputDecoration(labelText: "Login"),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Loginni kiriting";
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -119,9 +138,12 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                             labelText: "PIN-kod (4 xonali)"),
                         keyboardType: TextInputType.number,
                         maxLength: 4,
-                        validator: (value) => value!.length < 4
-                            ? "PIN-kod 4 xonali bo'lishi kerak"
-                            : null,
+                        validator: (value) {
+                          if (value == null || value.length < 4) {
+                            return "PIN-kod 4 xonali bo'lishi kerak";
+                          }
+                          return null;
+                        },
                       ),
                     ],
                   ),
@@ -129,7 +151,9 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               ),
               actions: [
                 TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
                     child: const Text("Bekor qilish")),
                 ElevatedButton(
                   onPressed: () async {
@@ -137,6 +161,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                       try {
                         String? imageUrl;
                         if (pickedImage != null) {
+                          // Rasmni Firebase Storage'ga yuklash
                           final ref = FirebaseStorage.instance
                               .ref()
                               .child('user_images')
@@ -144,12 +169,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                           await ref.putFile(File(pickedImage!.path));
                           imageUrl = await ref.getDownloadURL();
                         } else {
+                          // Agar rasm tanlanmagan bo'lsa, avvalgi URLni saqlab qolamiz
                           imageUrl = employee?.imageUrl;
                         }
 
                         if (employee == null) {
                           await _usersCollection.add({
                             'fullName': nameController.text,
+                            'login': loginController.text,
                             'role': selectedRole,
                             'pinCode': pinController.text,
                             'imageUrl': imageUrl,
@@ -158,16 +185,20 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                         } else {
                           await _usersCollection.doc(employee.id).update({
                             'fullName': nameController.text,
+                            'login': loginController.text,
                             'role': selectedRole,
                             'pinCode': pinController.text,
                             'imageUrl': imageUrl,
                           });
                         }
-                        if (mounted) Navigator.pop(context);
+                        if (mounted) {
+                          Navigator.pop(context);
+                        }
                       } catch (e) {
-                        if (mounted)
+                        if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text("Xatolik: $e")));
+                        }
                       }
                     }
                   },
@@ -189,7 +220,9 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         content: Text("Haqiqatan ham ${employee.name}ni o'chirmoqchimisiz?"),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+              },
               child: const Text("Bekor qilish")),
           ElevatedButton(
             onPressed: () async {
@@ -200,11 +233,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                       .delete();
                 }
                 await _usersCollection.doc(employee.id).delete();
-                if (mounted) Navigator.pop(context);
+                if (mounted) {
+                  Navigator.pop(context);
+                }
               } catch (e) {
-                if (mounted)
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("O'chirishda xatolik: $e")));
+                }
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -296,6 +332,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                   Text(employee.name,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(employee.login,
+                      style: const TextStyle(color: Colors.blueGrey)),
                   Text(employee.role,
                       style: const TextStyle(color: Colors.grey)),
                 ],
