@@ -158,6 +158,11 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                 ElevatedButton(
                   onPressed: () async {
                     if (formKey.currentState!.validate()) {
+                      // OGOHLANTIRISHNI TUZATISH:
+                      // 'context' ga bog'liq bo'lgan obyektlarni async amaldan oldin saqlab olamiz
+                      final navigator = Navigator.of(context);
+                      final messenger = ScaffoldMessenger.of(context);
+
                       try {
                         String? imageUrl;
                         if (pickedImage != null) {
@@ -191,14 +196,15 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                             'imageUrl': imageUrl,
                           });
                         }
-                        if (mounted) {
-                          Navigator.pop(context);
-                        }
+
+                        // OGOHLANTIRISHNI TUZATISH:
+                        // 'mounted' tekshiruvidan so'ng saqlab olingan obyektlardan foydalanamiz
+                        if (!mounted) return;
+                        navigator.pop();
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Xatolik: $e")));
-                        }
+                        if (!mounted) return;
+                        messenger.showSnackBar(
+                            SnackBar(content: Text("Xatolik: $e")));
                       }
                     }
                   },
@@ -226,6 +232,11 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               child: const Text("Bekor qilish")),
           ElevatedButton(
             onPressed: () async {
+              // OGOHLANTIRISHNI TUZATISH:
+              // 'context' ga bog'liq bo'lgan obyektlarni async amaldan oldin saqlab olamiz
+              final navigator = Navigator.of(context);
+              final messenger = ScaffoldMessenger.of(context);
+
               try {
                 if (employee.imageUrl != null) {
                   await FirebaseStorage.instance
@@ -233,14 +244,15 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                       .delete();
                 }
                 await _usersCollection.doc(employee.id).delete();
-                if (mounted) {
-                  Navigator.pop(context);
-                }
+
+                // OGOHLANTIRISHNI TUZATISH:
+                // 'mounted' tekshiruvidan so'ng saqlab olingan obyektlardan foydalanamiz
+                if (!mounted) return;
+                navigator.pop();
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("O'chirishda xatolik: $e")));
-                }
+                if (!mounted) return;
+                messenger.showSnackBar(
+                    SnackBar(content: Text("O'chirishda xatolik: $e")));
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

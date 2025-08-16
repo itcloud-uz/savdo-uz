@@ -28,9 +28,14 @@ dependencies:
   # Qurilmadan rasm tanlash uchun
   image_picker: ^1.1.2
 
-  # Yuzni tanish uchun 
+  # Yuzni aniqlash va tanish uchun
   camera: ^0.11.0+1
   google_mlkit_face_detection: ^0.11.0
+  
+  # ---- YUZNI TANISH UCHUN YANGI KUTUBXONALAR ----
+  image: ^4.2.0 # Rasmlar bilan chuqurroq ishlash uchun
+  tflite_flutter: ^0.10.4 # TensorFlow Lite modelini ishlatish uchun
+  # -----------------------------------------------
 
 
 dev_dependencies:
@@ -41,3 +46,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  # Dasturga model faylini tanitish
+  assets:
+    - assets/ml/

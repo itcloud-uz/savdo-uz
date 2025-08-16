@@ -100,6 +100,8 @@ class _PosScreenState extends State<PosScreen> {
 
     final firestore = FirebaseFirestore.instance;
     final totalAmount = _calculateTotal();
+    // Savdo uchun yagona ID'ni tranzaksiyadan oldin yaratamiz
+    final saleDoc = firestore.collection('sales').doc();
 
     try {
       // Tranzaksiya yozish
@@ -126,8 +128,7 @@ class _PosScreenState extends State<PosScreen> {
           });
         }
 
-        // Savdo haqidagi ma'lumotlarni saqlaymiz
-        final saleDoc = firestore.collection('sales').doc();
+        // Savdo haqidagi ma'lumotlarni oldindan yaratilgan ID bilan saqlaymiz
         transaction.set(saleDoc, {
           'saleId': saleDoc.id,
           'items': _cartItems
@@ -144,10 +145,9 @@ class _PosScreenState extends State<PosScreen> {
         });
       });
 
-      // Muvaffaqiyatli xabar va chek oynasini ko'rsatish
+      // Muvaffaqiyatli xabar va chek oynasini to'g'ri ID bilan ko'rsatish
       if (mounted) {
-        _showReceiptDialog(
-            totalAmount, _cartItems, firestore.collection('sales').doc().id);
+        _showReceiptDialog(totalAmount, _cartItems, saleDoc.id);
         setState(() => _cartItems.clear());
       }
     } catch (e) {
@@ -334,16 +334,24 @@ class _PosScreenState extends State<PosScreen> {
               children: [
                 Expanded(
                     child: ElevatedButton(
-                        onPressed: () => _completeSale('Naqd'),
+                        onPressed: _cartItems.isEmpty
+                            ? null
+                            : () => _completeSale('Naqd'),
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal),
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16)),
                         child: const Text("Naqd"))),
                 const SizedBox(width: 16),
                 Expanded(
                     child: ElevatedButton(
-                        onPressed: () => _completeSale('Karta'),
+                        onPressed: _cartItems.isEmpty
+                            ? null
+                            : () => _completeSale('Karta'),
                         style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.indigo),
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16)),
                         child: const Text("Karta"))),
               ],
             )

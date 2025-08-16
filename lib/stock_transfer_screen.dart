@@ -40,6 +40,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
             decoration: InputDecoration(
               hintText: "Mavjud: $availableQuantity ${productData['unit']}",
             ),
+            autofocus: true,
           ),
           actions: [
             TextButton(
@@ -59,7 +60,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text(
-                          "Noto'g'ri yoki mavjud bo'lmagan miqdor kiritildi!"),
+                          "Noto'g'ri yoki mavjud miqdordan ko'p kiritildi!"),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -88,8 +89,9 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
     }
   }
 
-  // O'tkazishni tasdiqlash funksiyasi
+  // O'tkazishni tasdiqlash funksiyasi (YANGILANGAN VA XAVFSIZLANTIRILGAN)
   Future<void> _confirmTransfer() async {
+    if (_isLoading) return; // Qayta-qayta bosishdan himoya
     setState(() => _isLoading = true);
 
     final firestore = FirebaseFirestore.instance;
@@ -97,53 +99,52 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
     try {
       await firestore.runTransaction((transaction) async {
         for (final item in _transferList) {
+          final productData = item.productDoc.data() as Map<String, dynamic>?;
+          final productName = productData?['name'] ?? 'Nomsiz mahsulot';
+
           final warehouseDocRef =
               firestore.collection('products').doc(item.productDoc.id);
           final shopDocRef =
               firestore.collection('shop_stock').doc(item.productDoc.id);
 
           final warehouseSnapshot = await transaction.get(warehouseDocRef);
-          if (!warehouseSnapshot.exists) {
-            throw Exception(
-                "${item.productDoc.get('name')} omborda topilmadi!");
+
+          if (!warehouseSnapshot.exists || warehouseSnapshot.data() == null) {
+            throw Exception("$productName omborda topilmadi!");
           }
 
-          final warehouseData = warehouseSnapshot.data();
-          if (warehouseData == null) {
-            throw Exception(
-                "${item.productDoc.get('name')} ma'lumotlari topilmadi!");
-          }
-
+          final warehouseData = warehouseSnapshot.data()!;
           final currentWarehouseQty =
               (warehouseData['quantity'] as num?)?.toDouble() ?? 0.0;
 
           if (currentWarehouseQty < item.quantity) {
             throw Exception(
-                "${item.productDoc.get('name')} mahsulotida yetarli qoldiq yo'q!");
+                "$productName mahsulotidan yetarli qoldiq yo'q (mavjud: $currentWarehouseQty)!");
           }
 
+          // Ombordagi qoldiqni kamaytiramiz
           transaction.update(warehouseDocRef,
               {'quantity': currentWarehouseQty - item.quantity});
 
+          // Do'kondagi qoldiqni yangilaymiz yoki yangi dokument yaratamiz
           final shopSnapshot = await transaction.get(shopDocRef);
-          if (shopSnapshot.exists) {
-            final shopData = shopSnapshot.data();
-            if (shopData == null) {
-              throw Exception("Do'kon mahsuloti ma'lumotlari buzilgan!");
-            }
+          if (shopSnapshot.exists && shopSnapshot.data() != null) {
+            final shopData = shopSnapshot.data()!;
             final currentShopQty =
                 (shopData['quantity'] as num?)?.toDouble() ?? 0.0;
             transaction.update(
                 shopDocRef, {'quantity': currentShopQty + item.quantity});
           } else {
+            // Do'konda bu mahsulot hali yo'q, yangi dokument yaratamiz
             transaction.set(shopDocRef, {
-              'name': (warehouseData['name'] as String?) ?? 'Nomsiz mahsulot',
-              'unit': (warehouseData['unit'] as String?) ?? 'dona',
+              'name': warehouseData['name'] ?? 'Nomsiz mahsulot',
+              'unit': warehouseData['unit'] ?? 'dona',
               'sellingPrice':
                   (warehouseData['sellingPrice'] as num?)?.toDouble() ?? 0.0,
               'quantity': item.quantity,
               'productId': item.productDoc.id,
-              'imageUrl': (warehouseData['imageUrl'] as String?),
+              'imageUrl':
+                  warehouseData['imageUrl'], // Bu 'null' bo'lishi mumkin
             });
           }
         }
@@ -212,15 +213,16 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                     final doc = snapshot.data!.docs[index];
                     final data = doc.data() as Map<String, dynamic>?;
                     if (data == null) {
-                      return const SizedBox
-                          .shrink(); // Ma'lumot yo'q bo'lsa, bo'sh joy qaytaramiz
+                      return const SizedBox.shrink();
                     }
                     final quantity =
                         (data['quantity'] as num?)?.toDouble() ?? 0.0;
+                    final unit = (data['unit'] as String?) ?? 'dona';
+
                     return Card(
                       child: ListTile(
                         title: Text((data['name'] as String?) ?? 'Nomsiz'),
-                        subtitle: Text("Qoldiq: $quantity ${data['unit']}"),
+                        subtitle: Text("Qoldiq: $quantity $unit"),
                         trailing: IconButton(
                           icon: const Icon(Icons.add_circle_outline,
                               color: Colors.green),
@@ -258,11 +260,11 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                           item.productDoc.data() as Map<String, dynamic>?;
                       if (data == null) return const SizedBox.shrink();
 
+                      final unit = (data['unit'] as String?) ?? 'dona';
                       return Card(
                         child: ListTile(
                           title: Text((data['name'] as String?) ?? 'Nomsiz'),
-                          subtitle:
-                              Text("Miqdor: ${item.quantity} ${data['unit']}"),
+                          subtitle: Text("Miqdor: ${item.quantity} $unit"),
                           trailing: IconButton(
                             icon: const Icon(Icons.remove_circle_outline,
                                 color: Colors.red),
@@ -278,7 +280,9 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
           _isLoading
               ? const Center(child: CircularProgressIndicator())
               : ElevatedButton.icon(
-                  onPressed: _transferList.isEmpty ? null : _confirmTransfer,
+                  onPressed: _transferList.isEmpty || _isLoading
+                      ? null
+                      : _confirmTransfer,
                   icon: const Icon(Icons.check_circle),
                   label: const Text("O'tkazishni tasdiqlash"),
                   style: ElevatedButton.styleFrom(
