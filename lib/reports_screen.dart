@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+// fl_chart kutubxonasini qo'shishimiz kerak.
+// pubspec.yaml fayliga fl_chart: ^0.68.0 qo'shing.
+// import 'package:fl_chart/fl_chart.dart'; // Hozircha kommentda qoldirilgan
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});

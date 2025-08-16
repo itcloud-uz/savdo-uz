@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 // --- Ma'lumotlar Modellari ---
 
@@ -11,8 +12,8 @@ class Product {
   final String name;
   final double price;
   final String unit;
-  // Mahsulot rasmi uchun (kelajakda ishlatiladi)
   final String? imageUrl;
+  final num quantity; // Qoldiqni kuzatish uchun
 
   Product({
     required this.id,
@@ -20,6 +21,7 @@ class Product {
     required this.price,
     required this.unit,
     this.imageUrl,
+    required this.quantity,
   });
 
   factory Product.fromFirestore(DocumentSnapshot doc) {
@@ -30,6 +32,7 @@ class Product {
       price: (data['sellingPrice'] ?? 0.0).toDouble(),
       unit: data['unit'] ?? 'dona',
       imageUrl: data['imageUrl'],
+      quantity: data['quantity'] as num? ?? 0,
     );
   }
 }
@@ -60,19 +63,25 @@ class _PosScreenState extends State<PosScreen> {
     setState(() {
       for (var item in _cartItems) {
         if (item.product.id == product.id) {
-          item.quantity++;
-          return;
+          if (item.quantity < product.quantity) {
+            item.quantity++;
+            return;
+          }
         }
       }
-      _cartItems.add(CartItem(product: product));
+      if (product.quantity > 0) {
+        _cartItems.add(CartItem(product: product));
+      }
     });
   }
 
   void _updateQuantity(CartItem item, int change) {
     setState(() {
-      item.quantity += change;
-      if (item.quantity <= 0) {
-        _cartItems.remove(item);
+      if (item.quantity + change <= item.product.quantity) {
+        item.quantity += change;
+        if (item.quantity <= 0) {
+          _cartItems.remove(item);
+        }
       }
     });
   }
@@ -83,6 +92,118 @@ class _PosScreenState extends State<PosScreen> {
       total += item.totalPrice;
     }
     return total;
+  }
+
+  // Savdoni yakunlash funksiyasi
+  Future<void> _completeSale(String paymentMethod) async {
+    if (_cartItems.isEmpty) return;
+
+    final firestore = FirebaseFirestore.instance;
+    final totalAmount = _calculateTotal();
+
+    try {
+      // Tranzaksiya yozish
+      await firestore.runTransaction((transaction) async {
+        for (final item in _cartItems) {
+          final docRef =
+              firestore.collection('shop_stock').doc(item.product.id);
+          final snapshot = await transaction.get(docRef);
+
+          if (!snapshot.exists) {
+            throw Exception(
+                "${item.product.name} do'kon qoldig'ida topilmadi.");
+          }
+
+          final currentQuantity =
+              (snapshot.data()?['quantity'] as num? ?? 0).toDouble();
+          if (currentQuantity < item.quantity) {
+            throw Exception("${item.product.name} dan yetarli qoldiq yo'q.");
+          }
+
+          // Qoldiqni kamaytiramiz
+          transaction.update(docRef, {
+            'quantity': currentQuantity - item.quantity,
+          });
+        }
+
+        // Savdo haqidagi ma'lumotlarni saqlaymiz
+        final saleDoc = firestore.collection('sales').doc();
+        transaction.set(saleDoc, {
+          'saleId': saleDoc.id,
+          'items': _cartItems
+              .map((item) => {
+                    'productId': item.product.id,
+                    'name': item.product.name,
+                    'quantity': item.quantity,
+                    'price': item.product.price,
+                  })
+              .toList(),
+          'totalAmount': totalAmount,
+          'paymentMethod': paymentMethod,
+          'saleDate': FieldValue.serverTimestamp(),
+        });
+      });
+
+      // Muvaffaqiyatli xabar va chek oynasini ko'rsatish
+      if (mounted) {
+        _showReceiptDialog(
+            totalAmount, _cartItems, firestore.collection('sales').doc().id);
+        setState(() => _cartItems.clear());
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("Savdoni yakunlashda xatolik: $e"),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  void _showReceiptDialog(
+      double totalAmount, List<CartItem> items, String saleId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Chek", textAlign: TextAlign.center),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...items.map((item) => ListTile(
+                      title: Text(item.product.name),
+                      trailing: Text(
+                          "${item.quantity} x ${currencyFormatter.format(item.product.price)}"),
+                    )),
+                const Divider(),
+                ListTile(
+                  title: const Text("Jami"),
+                  trailing: Text(currencyFormatter.format(totalAmount),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 18)),
+                ),
+                const SizedBox(height: 16),
+                QrImageView(
+                  data: saleId,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                ),
+                const Text("Skanerlash uchun QR-kod",
+                    textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Yopish"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // --- UI (Interfeys) ---
@@ -213,14 +334,14 @@ class _PosScreenState extends State<PosScreen> {
               children: [
                 Expanded(
                     child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () => _completeSale('Naqd'),
                         style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.teal),
                         child: const Text("Naqd"))),
                 const SizedBox(width: 16),
                 Expanded(
                     child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () => _completeSale('Karta'),
                         style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.indigo),
                         child: const Text("Karta"))),

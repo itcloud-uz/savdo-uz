@@ -39,7 +39,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     super.dispose();
   }
 
-  // Firebase'dan xodimlar ma'lumotlarini yuklash
+  // Firebase'dan xodimlarning yuz ma'lumotlarini yuklash
   Future<void> _loadKnownFaces() async {
     try {
       final querySnapshot =
@@ -97,12 +97,11 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      // Keraksiz o'zgaruvchilar va ularga tegishli kod olib tashlandi
-      // final WriteBuffer allBytes = WriteBuffer();
-      // for (final Plane plane in image.planes) {
-      //   allBytes.putUint8List(plane.bytes);
-      // }
-      // final bytes = allBytes.done().buffer.asUint8List();
+      final WriteBuffer allBytes = WriteBuffer();
+      for (final Plane plane in image.planes) {
+        allBytes.putUint8List(plane.bytes);
+      }
+      final bytes = allBytes.done().buffer.asUint8List();
 
       final Size imageSize =
           Size(image.width.toDouble(), image.height.toDouble());
@@ -119,9 +118,8 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         orElse: () => InputImageFormat.nv21,
       );
 
-      // Yangilangan inputImage yaratish usuli
       final inputImage = InputImage.fromBytes(
-        bytes: image.planes.first.bytes,
+        bytes: bytes,
         metadata: InputImageMetadata(
           size: imageSize,
           rotation: imageRotation,
