@@ -43,7 +43,9 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
                 child: const Text("Bekor qilish")),
             ElevatedButton(
               onPressed: () {
@@ -71,16 +73,18 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
     );
 
     if (quantity != null) {
-      setState(() {
-        final existingItemIndex = _transferList
-            .indexWhere((item) => item.productDoc.id == productDoc.id);
-        if (existingItemIndex != -1) {
-          _transferList[existingItemIndex].quantity = quantity;
-        } else {
-          _transferList
-              .add(TransferItem(productDoc: productDoc, quantity: quantity));
-        }
-      });
+      if (mounted) {
+        setState(() {
+          final existingItemIndex = _transferList
+              .indexWhere((item) => item.productDoc.id == productDoc.id);
+          if (existingItemIndex != -1) {
+            _transferList[existingItemIndex].quantity = quantity;
+          } else {
+            _transferList
+                .add(TransferItem(productDoc: productDoc, quantity: quantity));
+          }
+        });
+      }
     }
   }
 
@@ -104,14 +108,12 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                 "${item.productDoc.get('name')} omborda topilmadi!");
           }
 
-          final warehouseData =
-              warehouseSnapshot.data(); // Keraksiz cast olib tashlandi
+          final warehouseData = warehouseSnapshot.data();
           if (warehouseData == null) {
             throw Exception(
                 "${item.productDoc.get('name')} ma'lumotlari topilmadi!");
           }
 
-          // Ma'lumot turini to'g'ri olish uchun ishonchli usul
           final currentWarehouseQty =
               (warehouseData['quantity'] as num?)?.toDouble() ?? 0.0;
 
@@ -120,19 +122,15 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                 "${item.productDoc.get('name')} mahsulotida yetarli qoldiq yo'q!");
           }
 
-          // Ombordagi qoldiqni kamaytiramiz
           transaction.update(warehouseDocRef,
               {'quantity': currentWarehouseQty - item.quantity});
 
-          // Do'kondagi qoldiqni yangilaymiz yoki yangi mahsulot yaratamiz
           final shopSnapshot = await transaction.get(shopDocRef);
           if (shopSnapshot.exists) {
-            final shopData =
-                shopSnapshot.data(); // Keraksiz cast olib tashlandi
+            final shopData = shopSnapshot.data();
             if (shopData == null) {
               throw Exception("Do'kon mahsuloti ma'lumotlari buzilgan!");
             }
-            // Ma'lumot turini to'g'ri olish uchun ishonchli usul
             final currentShopQty =
                 (shopData['quantity'] as num?)?.toDouble() ?? 0.0;
             transaction.update(
@@ -145,8 +143,7 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                   (warehouseData['sellingPrice'] as num?)?.toDouble() ?? 0.0,
               'quantity': item.quantity,
               'productId': item.productDoc.id,
-              'imageUrl': (warehouseData['imageUrl']
-                  as String?), // imageUrl null bo'lishi mumkin
+              'imageUrl': (warehouseData['imageUrl'] as String?),
             });
           }
         }
@@ -162,7 +159,6 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
       }
     } catch (e) {
       if (mounted) {
-        // Xato xabarini foydalanuvchiga aniqroq ko'rsatamiz
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text("O'tkazishda xatolik: ${e.toString()}"),
@@ -219,7 +215,6 @@ class _StockTransferScreenState extends State<StockTransferScreen> {
                       return const SizedBox
                           .shrink(); // Ma'lumot yo'q bo'lsa, bo'sh joy qaytaramiz
                     }
-                    // Ma'lumot turini to'g'ri olish uchun ishonchli usul
                     final quantity =
                         (data['quantity'] as num?)?.toDouble() ?? 0.0;
                     return Card(
