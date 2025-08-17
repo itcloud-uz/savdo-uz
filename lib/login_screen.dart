@@ -1,10 +1,7 @@
-// lib/login_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // NUQTA (.), IKKI NUQTA (:) GA O'ZGARTIRILDI
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Yangi import
 import 'package:savdo_uz/main_screen.dart';
-import 'face_scan_screen.dart'; // QO'SHILDI
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,213 +11,138 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _loginController = TextEditingController();
-  final _pinController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
   bool _isLoading = false;
-  bool _isPinVisible = false;
+  String? _errorMessage;
 
-  @override
-  void dispose() {
-    _loginController.dispose();
-    _pinController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+  // Tizimga kirish funksiyasi to'liq yangilandi
+  Future<void> _signIn() async {
+    if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
-
-    String? userRole;
-    String? errorMessage;
 
     try {
-      final email = '${_loginController.text.trim().toLowerCase()}@savdo.uz';
-      final password = _pinController.text.trim();
-
+      // 1. Firebase orqali tizimga kirish
       final userCredential =
           await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
-      if (userCredential.user != null) {
-        final querySnapshot = await FirebaseFirestore.instance
-            .collection('employees')
-            .where('uid', isEqualTo: userCredential.user!.uid)
-            .limit(1)
-            .get();
+      final user = userCredential.user;
+      if (user == null) {
+        throw Exception('Foydalanuvchi topilmadi.');
+      }
 
-        if (querySnapshot.docs.isNotEmpty) {
-          userRole = querySnapshot.docs.first.get('role');
-        } else {
-          errorMessage =
-              'Foydalanuvchi ma\'lumotlar bazasida topilmadi yoki bog\'lanmagan.';
-        }
+      // 2. Foydalanuvchi rolini Firestore'dan olish
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('employees')
+          .doc(user.uid)
+          .get();
+
+      if (!docSnapshot.exists || docSnapshot.data() == null) {
+        _errorMessage = 'Foydalanuvchi ma\'lumotlar bazasida topilmadi.';
+        setState(() => _isLoading = false);
+        return;
       }
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found' ||
-          e.code == 'invalid-credential' ||
-          e.code == 'wrong-password') {
-        errorMessage = 'Login yoki PIN-kod xato.';
-      } else if (e.code == 'invalid-email') {
-        errorMessage = 'Login formati noto\'g\'ri.';
-      } else {
-        errorMessage = 'Noma\'lum xatolik yuz berdi. Internetni tekshiring.';
+
+      // Agar rol yozilmagan bo'lsa, 'Sotuvchi' standart rolini berish
+      final userRole = docSnapshot.data()!['role'] as String? ?? 'Sotuvchi';
+
+      // 3. Rol bilan birga asosiy ekranga o'tish
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            // XATO TUZATILDI: MainScreen'ga userRole parametri uzatildi
+            builder: (context) => MainScreen(userRole: userRole),
+          ),
+        );
       }
+    } on FirebaseAuthException {
+      _errorMessage = 'Email yoki parol xato!';
     } catch (e) {
-      errorMessage = 'Kutilmagan xatolik: ${e.toString()}';
+      _errorMessage = 'Tizimda kutilmagan xatolik yuz berdi.';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
-
-    if (!mounted) return;
-
-    if (userRole != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => MainScreen(userRole: userRole!),
-        ),
-      );
-    } else {
-      _showErrorDialog(errorMessage ?? 'Noma\'lum xatolik yuz berdi.');
-    }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  void _showErrorDialog(String message) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xatolik!'),
-        content: Text(message),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('OK'),
-            onPressed: () {
-              Navigator.of(ctx).pop();
-            },
-          )
-        ],
-      ),
-    );
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final primaryColor = Theme.of(context).primaryColor;
+    final errorColor = Theme.of(context).colorScheme.error;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Tizimga Kirish'),
-        centerTitle: true,
-      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'savdo.uz',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 40),
-                  TextFormField(
-                    controller: _loginController,
-                    decoration: const InputDecoration(
-                      labelText: 'Login',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Loginni kiriting';
-                      }
-                      return null;
-                    },
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: _pinController,
-                    obscureText: !_isPinVisible,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'PIN-kod',
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPinVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _isPinVisible = !_isPinVisible;
-                          });
-                        },
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'PIN-kodni kiriting';
-                      }
-                      return null;
-                    },
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                  ),
-                  const SizedBox(height: 30),
-                  _isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : ElevatedButton(
-                          onPressed: _login,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text('Kirish'),
-                        ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const FaceScanScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.face),
-                    label: const Text('Yuzni Skanerlash'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.grey[700],
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Savdo.uz',
+                style: textTheme.displayLarge?.copyWith(color: primaryColor),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                'Tizimga kirish',
+                style: textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 40),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Parol',
+                  prefixIcon: Icon(Icons.lock_outline),
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: textTheme.bodyMedium?.copyWith(color: errorColor),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              SizedBox(
+                width: double.infinity,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: _signIn,
+                        child: const Text('KIRISH'),
+                      ),
+              ),
+            ],
           ),
         ),
       ),
