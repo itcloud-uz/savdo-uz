@@ -6,7 +6,18 @@ import 'package:savdo_uz/pos_screen.dart';
 import 'package:savdo_uz/inventory_screen.dart';
 import 'package:savdo_uz/employees_screen.dart';
 import 'package:savdo_uz/reports_screen.dart';
-import 'package:savdo_uz/services/firestore_service.dart'; // Yangi servisni import qilamiz
+// FirestoreService'ni import qilamiz, chunki unda formatCurrency funksiyasi bor
+import 'package:savdo_uz/services/firestore_service.dart';
+
+// "Tezkor Amallar" uchun alohida model klass. Bu kodni xavfsizroq va o'qilishi oson qiladi.
+class _QuickAction {
+  final IconData icon;
+  final String label;
+  final Widget screen;
+
+  const _QuickAction(
+      {required this.icon, required this.label, required this.screen});
+}
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -16,11 +27,29 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
-  final FirestoreService _firestoreService =
-      FirestoreService(); // Servisdan nusxa olamiz
 
-  // Chiqish funksiyasi
+  // "Tezkor amallar" ro'yxati endi yuqoridagi modeldan foydalanadi
+  final List<_QuickAction> _quickActions = const [
+    _QuickAction(
+        icon: Icons.point_of_sale_outlined,
+        label: 'Savdo',
+        screen: PosScreen()),
+    _QuickAction(
+        icon: Icons.inventory_2_outlined,
+        label: 'Mahsulotlar',
+        screen: InventoryScreen()),
+    _QuickAction(
+        icon: Icons.group_outlined,
+        label: 'Xodimlar',
+        screen: EmployeesScreen()),
+    _QuickAction(
+        icon: Icons.bar_chart_outlined,
+        label: 'Hisobotlar',
+        screen: ReportsScreen()),
+  ];
+
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (mounted) {
@@ -33,10 +62,6 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // withOpacity() o'rniga Colors.blueGrey.withAlpha() ishlatamiz, chunki withOpacity deprecated
-    final primaryColorWithOpacity =
-        Theme.of(context).primaryColor.withAlpha(25); // 0.1 * 255 ≈ 25
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Boshqaruv Paneli'),
@@ -53,30 +78,31 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildGreetingCard(primaryColorWithOpacity),
+            _buildGreetingCard(),
             const SizedBox(height: 24),
             _buildSectionTitle(context, 'Umumiy Holat'),
             const SizedBox(height: 12),
-            _buildSummaryCards(), // Bu endi dinamik bo'ladi
+            _buildSummaryCards(),
             const SizedBox(height: 24),
             _buildSectionTitle(context, 'Tezkor Amallar'),
             const SizedBox(height: 12),
-            _buildQuickActions(context),
+            _buildQuickActionsGrid(context),
             const SizedBox(height: 24),
             _buildSectionTitle(context, "So'nggi Sotuvlar"),
             const SizedBox(height: 12),
-            _buildRecentSales(), // Bu ham dinamik bo'ladi
+            _buildRecentSalesList(),
           ],
         ),
       ),
     );
   }
 
-  // Foydalanuvchi bilan salomlashish kartasi
-  Widget _buildGreetingCard(Color bgColor) {
+  // --- Asosiy Vidjetlar ---
+
+  Widget _buildGreetingCard() {
     return Card(
       elevation: 0,
-      color: bgColor,
+      color: Theme.of(context).primaryColor.withOpacity(0.05),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -93,7 +119,10 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   Text(
                     _currentUser?.email ?? 'Foydalanuvchi',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -105,68 +134,41 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // Bo'lim sarlavhasi
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.headlineSmall,
+      style: Theme.of(context).textTheme.titleLarge,
     );
   }
 
-  // Asosiy bo'limlarga o'tish tugmalari
-  Widget _buildQuickActions(BuildContext context) {
-    final actions = [
-      {
-        'icon': Icons.point_of_sale,
-        'label': 'Savdo',
-        'screen': const PosScreen()
-      },
-      {
-        'icon': Icons.inventory,
-        'label': 'Omborxona',
-        'screen': const InventoryScreen()
-      },
-      {
-        'icon': Icons.people,
-        'label': 'Xodimlar',
-        'screen': const EmployeesScreen()
-      },
-      {
-        'icon': Icons.bar_chart,
-        'label': 'Hisobotlar',
-        'screen': const ReportsScreen()
-      },
-    ];
+  Widget _buildQuickActionsGrid(BuildContext context) {
+    // Ekran o'lchamiga qarab ustunlar sonini moslashtirish
+    int crossAxisCount = (MediaQuery.of(context).size.width / 180).floor();
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount < 2 ? 2 : crossAxisCount,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 1.5,
       ),
-      itemCount: actions.length,
+      itemCount: _quickActions.length,
       itemBuilder: (context, index) {
+        final action = _quickActions[index];
         return ActionCard(
-          icon: actions[index]['icon'] as IconData,
-          label: actions[index]['label'] as String,
+          icon: action.icon,
+          label: action.label,
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => actions[index]['screen'] as Widget),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => action.screen));
           },
         );
       },
     );
   }
 
-  // --- Yangilangan Dinamik Widgetlar ---
-
-  // Umumiy holat kartalarini StreamBuilder bilan qurish
   Widget _buildSummaryCards() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestoreService.getSalesForToday(),
@@ -181,64 +183,48 @@ class _MainScreenState extends State<MainScreen> {
         if (snapshot.hasError) {
           return const Center(child: Text("Ma'lumotlarni yuklashda xatolik"));
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Row(children: [
-            Expanded(
-                child: SummaryCard(
-                    title: 'Bugungi Savdo',
-                    value: '0',
-                    unit: "so'm",
-                    icon: Icons.trending_up,
-                    color: Colors.green)),
-            SizedBox(width: 12),
-            Expanded(
-                child: SummaryCard(
-                    title: 'Sotuvlar Soni',
-                    value: '0',
-                    unit: 'ta',
-                    icon: Icons.receipt_long,
-                    color: Colors.orange)),
-          ]);
+
+        double totalSales = 0.0;
+        int salesCount = 0;
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final salesDocs = snapshot.data!.docs;
+          totalSales = salesDocs.fold<double>(0.0, (currentSum, doc) {
+            final data = doc.data() as Map<String, dynamic>?;
+            return currentSum + (data?['totalAmount'] as num? ?? 0.0);
+          });
+          salesCount = salesDocs.length;
         }
-
-        final salesDocs = snapshot.data!.docs;
-
-        // Bu yerda 'sum' o'rniga 'currentSum' nomini ishlatamiz
-        double totalSales = salesDocs.fold<double>(0.0, (currentSum, doc) {
-          final data = doc.data() as Map<String, dynamic>?;
-          return currentSum + (data?['totalAmount'] as num? ?? 0.0);
-        });
-        int salesCount = salesDocs.length;
 
         return Row(
           children: [
             Expanded(
-                child: SummaryCard(
-                    title: 'Bugungi Savdo',
-                    value: formatCurrency(totalSales)
-                        .replaceAll('so\'m', '')
-                        .trim(),
-                    unit: "so'm",
-                    icon: Icons.trending_up,
-                    color: Colors.green)),
+              child: SummaryCard(
+                  title: 'Bugungi Savdo',
+                  value: formatCurrency(totalSales).replaceAll(
+                      RegExp(r'\D'), ''), // Raqamlarni ajratib oladi
+                  unit: "so'm",
+                  icon: Icons.trending_up,
+                  color: Colors.green),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: SummaryCard(
-                    title: 'Sotuvlar Soni',
-                    value: salesCount.toString(),
-                    unit: 'ta',
-                    icon: Icons.receipt_long,
-                    color: Colors.orange)),
+              child: SummaryCard(
+                  title: 'Sotuvlar Soni',
+                  value: salesCount.toString(),
+                  unit: 'ta',
+                  icon: Icons.receipt_long,
+                  color: Colors.orange),
+            ),
           ],
         );
       },
     );
   }
 
-  // Oxirgi sotuvlar ro'yxatini StreamBuilder bilan qurish
-  Widget _buildRecentSales() {
+  Widget _buildRecentSalesList() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getRecentSales(),
+      stream: _firestoreService.getRecentSales(limit: 5),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -248,9 +234,11 @@ class _MainScreenState extends State<MainScreen> {
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Card(
-              child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Center(child: Text("Hozircha sotuvlar mavjud emas"))));
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text("Hozircha sotuvlar mavjud emas")),
+            ),
+          );
         }
 
         final recentSales = snapshot.data!.docs;
@@ -263,7 +251,6 @@ class _MainScreenState extends State<MainScreen> {
             itemBuilder: (context, index) {
               final sale = recentSales[index].data() as Map<String, dynamic>;
               final items = sale['items'] as List? ?? [];
-
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.shopping_bag)),
                 title: Text('Chek #${sale['saleId'] ?? 'N/A'}'),
@@ -284,7 +271,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// --- YORDAMCHI WIDGETLAR (SummaryCard'ga o'zgartirish kiritildi) ---
+// --- YORDAMCHI WIDGETLAR (Shu fayl ichida aniqlangan) ---
 
 class SummaryCard extends StatelessWidget {
   final String title;
@@ -294,6 +281,7 @@ class SummaryCard extends StatelessWidget {
   final Color color;
   final bool isLoading;
 
+  // Asosiy konstruktor
   const SummaryCard({
     super.key,
     required this.title,
@@ -303,6 +291,7 @@ class SummaryCard extends StatelessWidget {
     required this.color,
   }) : isLoading = false;
 
+  // XATO BERMASLIGI UCHUN "loading" NOMli maxsus konstruktor
   const SummaryCard.loading({super.key})
       : title = '',
         value = '',
@@ -376,8 +365,3 @@ class ActionCard extends StatelessWidget {
     );
   }
 }
-
-// formatCurrency funksiyasini o'zingiz qayerdadir aniqlagan bo'lsangiz, uni ishlatishda davom eting.
-// Agar yo'q bo'lsa, uni intl paketidan import qilishingiz mumkin:
-// import 'package:intl/intl.dart';
-// String formatCurrency(num amount) => NumberFormat.currency(locale: 'uz_UZ', symbol: 'so\'m').format(amount);

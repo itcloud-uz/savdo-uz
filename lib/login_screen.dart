@@ -1,8 +1,6 @@
-// lib/login_screen.dart
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:savdo_uz/main_screen.dart';
+import 'face_scan_screen.dart'; // FaceScanScreen import qilingan
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,193 +10,146 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _auth = FirebaseAuth.instance;
-
   bool _isLoading = false;
-  bool _isPasswordVisible = false;
   String? _errorMessage;
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _signIn() async {
-    // Form validation
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+  void _login() {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    try {
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+    // TODO: Haqiqiy autentifikatsiya logikasini qo'shing (masalan, Firebase Auth)
+    // Hozircha oddiy tekshiruv
+    if (_loginController.text == 'admin' &&
+        _passwordController.text == 'password') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScreen()),
       );
-
-      // Agar context hali mavjud bo'lsa, keyingi ekranga o'tish
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-      }
-    } on FirebaseAuthException catch (e) {
+    } else {
       setState(() {
-        _errorMessage = _translateErrorMessage(e.code);
+        _errorMessage = 'Login yoki parol xato!';
+        _isLoading = false;
       });
-    } catch (e) {
-      setState(() {
-        _errorMessage =
-            "Noma'lum xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  // Firebase xatolik kodlarini o'zbek tiliga tarjima qilish
-  String _translateErrorMessage(String code) {
-    switch (code) {
-      case 'user-not-found':
-        return 'Bunday foydalanuvchi topilmadi.';
-      case 'wrong-password':
-        return 'Parol noto‘g‘ri. Iltimos, tekshirib qayta kiriting.';
-      case 'invalid-email':
-        return 'Email manzil noto‘g‘ri formatda kiritilgan.';
-      case 'user-disabled':
-        return 'Bu foydalanuvchi akkaunti oʻchirib qoʻyilgan.';
-      case 'network-request-failed':
-        return 'Internet aloqasi mavjud emas. Ulanishni tekshiring.';
-      default:
-        return 'Kirishda xatolik yuz berdi.';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Theme ma'lumotlarini osonroq chaqirish uchun
-    final textTheme = Theme.of(context).textTheme;
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Asosiy Sarlavha
-                  Text(
-                    'savdo.uz tizimiga',
-                    textAlign: TextAlign.center,
-                    style: textTheme.bodyLarge
-                        ?.copyWith(color: Theme.of(context).primaryColor),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Xush kelibsiz!',
-                    textAlign: TextAlign.center,
-                    style: textTheme.displayMedium, // Yangi dizayn tizimidan
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Email kiritish maydoni
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Elektron pochta',
-                      prefixIcon: Icon(Icons.email_outlined),
+      appBar: AppBar(
+        title: const Text('Kirish'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Icon(
+                Icons.store,
+                size: 80,
+                color: Theme.of(context).primaryColor,
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Savdo.uz',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    validator: (value) {
-                      if (value == null ||
-                          value.isEmpty ||
-                          !value.contains('@')) {
-                        return 'Iltimos, to\'g\'ri elektron pochta kiriting';
-                      }
-                      return null;
-                    },
+              ),
+              const SizedBox(height: 40),
+              TextField(
+                controller: _loginController,
+                decoration: const InputDecoration(
+                  labelText: 'Login',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Parol',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 20),
-
-                  // Parol kiritish maydoni
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: !_isPasswordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Parol',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
+                ),
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton.icon(
+                      onPressed: _login,
+                      icon: const Icon(Icons.login),
+                      label: const Text('Kirish'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
-                        },
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Iltimos, parolni kiriting';
-                      }
-                      return null;
-                    },
+              const SizedBox(height: 20),
+              const Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text('yoki'),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Xatolik xabarini ko'rsatish
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyMedium
-                            ?.copyWith(color: colorScheme.error),
-                      ),
-                    ),
-
-                  // Kirish tugmasi
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _signIn,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 3,
-                            ),
-                          )
-                        : const Text('Kirish'),
-                  ),
+                  Expanded(child: Divider()),
                 ],
               ),
-            ),
+              const SizedBox(height: 20),
+              // Yuz orqali skanerlash tugmasi
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const FaceScanScreen()),
+                  );
+                },
+                icon: const Icon(Icons.face_retouching_natural),
+                label: const Text('Yuz orqali skanerlash'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _loginController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 }
