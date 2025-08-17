@@ -3,45 +3,53 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // USERS kolleksiyasi uchun qoidalar
-    match /users/{userId} {
-      // Hozircha har qanday foydalanuvchi o'qishi va yozishi mumkin...
-      allow read, write: if true; 
+    // ---- Yordamchi Funksiyalar ----
+    // Foydalanuvchi tizimga kirganligini tekshiradi
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Foydalanuvchining rolini 'employees' kolleksiyasidan oladi
+    // Bu funksiya ishlashi uchun 'employees'dagi hujjat ID'si foydalanuvchi UID'siga teng bo'lishi SHART!
+    function getUserRole(uid) {
+      return get(/databases/$(database)/documents/employees/$(uid)).data.role;
+    }
+
+    // Foydalanuvchi Admin ekanligini tekshiradi
+    function isAdmin() {
+      return isSignedIn() && getUserRole(request.auth.uid) == 'Admin';
+    }
+
+    // Foydalanuvchi Sotuvchi ekanligini tekshiradi
+    function isSeller() {
+      return isSignedIn() && getUserRole(request.auth.uid) == 'Sotuvchi';
+    }
+    
+    // Foydalanuvchi Omborchi ekanligini tekshiradi
+    function isWarehouseKeeper() {
+        return isSignedIn() && getUserRole(request.auth.uid) == 'Omborchi';
+    }
+
+    // ---- Asosiy Qoidalar ----
+
+    // "employees" kolleksiyasi uchun qoidalar
+    match /employees/{userId} {
+      // Admin barcha xodimlarni ko'ra oladi.
+      // Oddiy xodim faqat o'zining ma'lumotlarini ko'ra oladi.
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
       
-      // TODO: Keyingi bosqichda faqat Adminlar uchun ruxsat beriladi
-      // allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      // Faqat Admin yangi xodim qo'shishi, o'zgartirishi yoki o'chirishi mumkin.
+      allow write: if isAdmin();
     }
 
-    // PRODUCTS (Ombor) kolleksiyasi uchun qoidalar
-    match /products/{productId} {
-      allow read: if true;
-      // TUZATILDI: "String" "string" ga o'zgartirildi
-      allow write: if request.resource.data.name is string &&
-                       request.resource.data.unit is string &&
-                       request.resource.data.quantity is number &&
-                       request.resource.data.costPrice is number &&
-                       request.resource.data.sellingPrice is number;
+    // "products", "sales", "stock" va boshqa barcha kolleksiyalar uchun qoidalar
+    // Hozircha Admin hamma narsani qila oladi, qolganlar faqat o'qiy oladi
+    // Buni keyinchalik yanada aniqlashtiramiz
+    match /{document=**} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
     }
 
-    // SHOP_STOCK (Do'kon) kolleksiyasi uchun qoidalar
-    match /shop_stock/{productId} {
-      allow read: if true;
-      // TUZATILDI: "String" "string" ga o'zgartirildi
-      allow write: if request.resource.data.name is string &&
-                       request.resource.data.unit is string &&
-                       request.resource.data.quantity is number &&
-                       request.resource.data.sellingPrice is number &&
-                       request.resource.data.productId is string;
-    }
-
-    // SALES (Savdolar) kolleksiyasi uchun qoidalar
-    match /sales/{saleId} {
-      allow read: if true;
-      // TUZATILDI: "String" "string" ga o'zgartirildi
-      allow create: if request.resource.data.totalAmount is number &&
-                       request.resource.data.paymentMethod is string &&
-                       request.resource.data.items is list;
-      allow update, delete: if false;
-    }
+    // Yuqoridagi qoidaga tushmagan har qanday so'rov rad etiladi.
   }
 }
