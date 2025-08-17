@@ -1,9 +1,8 @@
+// lib/core/theme/app_text_styles.dart
 import 'package:flutter/material.dart';
-import 'package:savdo_uz/core/theme/app_colors.dart';
+import 'app_colors.dart';
 
-// Matn uslublarini markazlashtirish uchun klass
 class AppTextStyles {
-  // Sarlavha uslublari
   static const TextStyle headline1 = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.bold,
@@ -22,7 +21,6 @@ class AppTextStyles {
     color: AppColors.textPrimary,
   );
 
-  // Asosiy matn uslublari
   static const TextStyle bodyText1 = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.normal,
@@ -35,10 +33,9 @@ class AppTextStyles {
     color: AppColors.textSecondary,
   );
 
-  // Tugma matni uslubi
   static const TextStyle button = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.bold,
-    color: AppColors.textLight,
+    color: AppColors.white,
   );
 }

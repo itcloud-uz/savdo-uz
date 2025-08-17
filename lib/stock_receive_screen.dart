@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// Yordamchi: Firebase Firestore paketini import qilamiz
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StockReceiveScreen extends StatefulWidget {
@@ -18,7 +17,7 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
 
   String _selectedUnit = 'dona';
   final List<String> _units = ['dona', 'kg', 'litr', 'metr'];
-  bool _isLoading = false; // Yuklanish holatini kuzatish uchun
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -29,28 +28,24 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
     super.dispose();
   }
 
-  // Ma'lumotlarni Firebase'ga yuborish funksiyasi
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _isLoading = true; // Yuklanishni boshlaymiz
+        _isLoading = true;
       });
 
       try {
-        // Firestore'dagi 'products' nomli koleksiyaga ulanamiz
         final collection = FirebaseFirestore.instance.collection('products');
 
-        // Yangi mahsulot ma'lumotlarini tayyorlaymiz
         await collection.add({
           'name': _nameController.text,
           'unit': _selectedUnit,
           'quantity': double.tryParse(_quantityController.text) ?? 0,
           'costPrice': double.tryParse(_costPriceController.text) ?? 0,
           'sellingPrice': double.tryParse(_sellingPriceController.text) ?? 0,
-          'createdAt': Timestamp.now(), // Saqlangan vaqt
+          'createdAt': Timestamp.now(),
         });
 
-        // Muvaffaqiyatli saqlanganda xabar ko'rsatamiz
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -60,7 +55,6 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
           );
         }
 
-        // Formalarni tozalaymiz
         _formKey.currentState!.reset();
         _nameController.clear();
         _quantityController.clear();
@@ -70,7 +64,6 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
           _selectedUnit = 'dona';
         });
       } catch (e) {
-        // Xatolik yuzaga kelsa, xabar ko'rsatamiz
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -82,7 +75,7 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
       } finally {
         if (mounted) {
           setState(() {
-            _isLoading = false; // Yuklanishni tugatamiz
+            _isLoading = false;
           });
         }
       }
@@ -139,7 +132,8 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<String>(
-                              value: _selectedUnit,
+                              initialValue:
+                                  _selectedUnit, // deprecated 'value' o'rniga initialValue ishlatildi
                               items: _units.map((String unit) {
                                 return DropdownMenuItem<String>(
                                   value: unit,
@@ -215,7 +209,6 @@ class _StockReceiveScreenState extends State<StockReceiveScreen> {
                         },
                       ),
                       const SizedBox(height: 24),
-                      // Agar yuklanish bo'layotgan bo'lsa, aylana, aks holda tugma ko'rsatiladi
                       _isLoading
                           ? const Center(child: CircularProgressIndicator())
                           : ElevatedButton.icon(

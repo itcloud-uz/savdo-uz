@@ -133,7 +133,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: selectedRole,
+                        initialValue: selectedRole, // ✅ TUZATILDI
                         items: roles
                             .map((role) => DropdownMenuItem(
                                 value: role, child: Text(role)))
@@ -182,7 +182,6 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                               List? faceEmbedding;
 
                               if (pickedImage != null) {
-                                // METOD NOMI TUZATILDI
                                 faceEmbedding = await _faceRecognitionService
                                     .processImageFileForEmbedding(pickedImage!);
 

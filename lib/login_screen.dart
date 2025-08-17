@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+// lib/login_screen.dart
+
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Yangi import
+import 'package:flutter/material.dart';
 import 'package:savdo_uz/main_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -11,15 +12,27 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _auth = FirebaseAuth.instance;
 
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
   String? _errorMessage;
 
-  // Tizimga kirish funksiyasi to'liq yangilandi
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _signIn() async {
-    if (_isLoading) return;
+    // Form validation
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -27,46 +40,26 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // 1. Firebase orqali tizimga kirish
-      final userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      final user = userCredential.user;
-      if (user == null) {
-        throw Exception('Foydalanuvchi topilmadi.');
-      }
-
-      // 2. Foydalanuvchi rolini Firestore'dan olish
-      final docSnapshot = await FirebaseFirestore.instance
-          .collection('employees')
-          .doc(user.uid)
-          .get();
-
-      if (!docSnapshot.exists || docSnapshot.data() == null) {
-        _errorMessage = 'Foydalanuvchi ma\'lumotlar bazasida topilmadi.';
-        setState(() => _isLoading = false);
-        return;
-      }
-
-      // Agar rol yozilmagan bo'lsa, 'Sotuvchi' standart rolini berish
-      final userRole = docSnapshot.data()!['role'] as String? ?? 'Sotuvchi';
-
-      // 3. Rol bilan birga asosiy ekranga o'tish
+      // Agar context hali mavjud bo'lsa, keyingi ekranga o'tish
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            // XATO TUZATILDI: MainScreen'ga userRole parametri uzatildi
-            builder: (context) => MainScreen(userRole: userRole),
-          ),
+          MaterialPageRoute(builder: (context) => const MainScreen()),
         );
       }
-    } on FirebaseAuthException {
-      _errorMessage = 'Email yoki parol xato!';
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorMessage = _translateErrorMessage(e.code);
+      });
     } catch (e) {
-      _errorMessage = 'Tizimda kutilmagan xatolik yuz berdi.';
+      setState(() {
+        _errorMessage =
+            "Noma'lum xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
+      });
     } finally {
       if (mounted) {
         setState(() {
@@ -76,73 +69,133 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  // Firebase xatolik kodlarini o'zbek tiliga tarjima qilish
+  String _translateErrorMessage(String code) {
+    switch (code) {
+      case 'user-not-found':
+        return 'Bunday foydalanuvchi topilmadi.';
+      case 'wrong-password':
+        return 'Parol noto‘g‘ri. Iltimos, tekshirib qayta kiriting.';
+      case 'invalid-email':
+        return 'Email manzil noto‘g‘ri formatda kiritilgan.';
+      case 'user-disabled':
+        return 'Bu foydalanuvchi akkaunti oʻchirib qoʻyilgan.';
+      case 'network-request-failed':
+        return 'Internet aloqasi mavjud emas. Ulanishni tekshiring.';
+      default:
+        return 'Kirishda xatolik yuz berdi.';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Theme ma'lumotlarini osonroq chaqirish uchun
     final textTheme = Theme.of(context).textTheme;
-    final primaryColor = Theme.of(context).primaryColor;
-    final errorColor = Theme.of(context).colorScheme.error;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Savdo.uz',
-                style: textTheme.displayLarge?.copyWith(color: primaryColor),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tizimga kirish',
-                style: textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 40),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'Parol',
-                  prefixIcon: Icon(Icons.lock_outline),
-                ),
-              ),
-              const SizedBox(height: 24),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    _errorMessage!,
-                    style: textTheme.bodyMedium?.copyWith(color: errorColor),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Asosiy Sarlavha
+                  Text(
+                    'savdo.uz tizimiga',
                     textAlign: TextAlign.center,
+                    style: textTheme.bodyLarge
+                        ?.copyWith(color: Theme.of(context).primaryColor),
                   ),
-                ),
-              SizedBox(
-                width: double.infinity,
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: _signIn,
-                        child: const Text('KIRISH'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Xush kelibsiz!',
+                    textAlign: TextAlign.center,
+                    style: textTheme.displayMedium, // Yangi dizayn tizimidan
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Email kiritish maydoni
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      labelText: 'Elektron pochta',
+                      prefixIcon: Icon(Icons.email_outlined),
+                    ),
+                    validator: (value) {
+                      if (value == null ||
+                          value.isEmpty ||
+                          !value.contains('@')) {
+                        return 'Iltimos, to\'g\'ri elektron pochta kiriting';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Parol kiritish maydoni
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: !_isPasswordVisible,
+                    decoration: InputDecoration(
+                      labelText: 'Parol',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
                       ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Iltimos, parolni kiriting';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Xatolik xabarini ko'rsatish
+                  if (_errorMessage != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: textTheme.bodyMedium
+                            ?.copyWith(color: colorScheme.error),
+                      ),
+                    ),
+
+                  // Kirish tugmasi
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _signIn,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 3,
+                            ),
+                          )
+                        : const Text('Kirish'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

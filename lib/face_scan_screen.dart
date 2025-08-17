@@ -1,3 +1,5 @@
+// lib/face_scan_screen.dart
+
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
@@ -5,7 +7,6 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:savdo_uz/main_screen.dart';
 import 'package:savdo_uz/face_recognition_service.dart';
-// import 'package:flutter/foundation.dart'; // <-- KERAKSIZ IMPORT OLIB TASHLANDI
 
 class FaceScanScreen extends StatefulWidget {
   const FaceScanScreen({super.key});
@@ -17,18 +18,20 @@ class FaceScanScreen extends StatefulWidget {
 class _FaceScanScreenState extends State<FaceScanScreen> {
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
-  String _statusMessage = "Kamerani ishga tushirish...";
+  String _statusMessage = "Xodimlarni yuklash...";
   bool _isProcessing = false;
+  bool _faceRecognized = false;
 
   final FaceRecognitionService _faceRecognitionService =
       FaceRecognitionService();
-  final List<Map<String, dynamic>> _knownUsers = [];
-  bool _areUsersLoaded = false;
+  final List<Map<String, dynamic>> _knownEmployees = [];
+  bool _areEmployeesLoaded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadKnownUsersAndInitializeCamera();
+    // Avval xodimlarni yuklaymiz, keyin kamerani ishga tushiramiz
+    _loadKnownEmployeesAndInitializeCamera();
   }
 
   @override
@@ -39,15 +42,17 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     super.dispose();
   }
 
-  Future<void> _loadKnownUsersAndInitializeCamera() async {
-    await _loadKnownUsers();
+  /// 🔹 Yangi metod: xodimlarni yuklab bo‘lgach kamerani ishga tushiradi
+  Future<void> _loadKnownEmployeesAndInitializeCamera() async {
+    await _loadKnownEmployees();
     await _initializeCamera();
   }
 
-  Future<void> _loadKnownUsers() async {
+  /// Firestore'dan yuz izi saqlangan xodimlarni yuklaydi
+  Future<void> _loadKnownEmployees() async {
     try {
       final querySnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
+          await FirebaseFirestore.instance.collection('employees').get();
 
       for (var doc in querySnapshot.docs) {
         final data = doc.data();
@@ -57,25 +62,30 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
               .map((e) => e as double)
               .toList();
 
-          _knownUsers.add({
-            "fullName": data['fullName'],
-            "role": data['role'],
+          _knownEmployees.add({
+            "name": data['name'],
             "embedding": embedding,
           });
         }
       }
-      setState(() {
-        _areUsersLoaded = true;
-        _statusMessage = _knownUsers.isEmpty
-            ? "Tizimda yuz izi saqlangan xodimlar topilmadi"
-            : "Iltimos, yuzingizni doira ichiga joylashtiring";
-      });
+
+      if (mounted) {
+        setState(() {
+          _areEmployeesLoaded = true;
+          _statusMessage = _knownEmployees.isEmpty
+              ? "Tizimda yuz izi saqlangan xodimlar topilmadi"
+              : "Iltimos, yuzingizni doira ichiga joylashtiring";
+        });
+      }
     } catch (e) {
       debugPrint("Xodimlarni yuklashda xatolik: $e");
-      setState(() => _statusMessage = "Xodimlarni yuklashda xatolik");
+      if (mounted) {
+        setState(() => _statusMessage = "Xodimlarni yuklashda xatolik");
+      }
     }
   }
 
+  /// Kamerani ishga tushiradi va kadrlar oqimini boshlaydi
   Future<void> _initializeCamera() async {
     try {
       final cameras = await availableCameras();
@@ -95,7 +105,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
 
       setState(() => _isCameraInitialized = true);
 
-      if (_areUsersLoaded && _knownUsers.isNotEmpty) {
+      if (_areEmployeesLoaded && _knownEmployees.isNotEmpty) {
         _cameraController!.startImageStream(_processImage);
       }
     } catch (e) {
@@ -104,23 +114,13 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     }
   }
 
-  InputImageRotation _rotationIntToImageRotation(int rotation) {
-    switch (rotation) {
-      case 90:
-        return InputImageRotation.rotation90deg;
-      case 180:
-        return InputImageRotation.rotation180deg;
-      case 270:
-        return InputImageRotation.rotation270deg;
-      default:
-        return InputImageRotation.rotation0deg;
-    }
-  }
-
+  /// Kameradan kelayotgan har bir kadrni qayta ishlaydi
   void _processImage(CameraImage image) async {
-    if (_isProcessing || !_areUsersLoaded || !mounted) return;
+    if (_isProcessing || !_areEmployeesLoaded || !mounted) return;
 
-    setState(() => _isProcessing = true);
+    setState(() {
+      _isProcessing = true;
+    });
 
     try {
       final rotation = _rotationIntToImageRotation(
@@ -133,15 +133,17 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
 
         if (bestMatch != null) {
           await _cameraController?.stopImageStream();
-          setState(() => _statusMessage = "${bestMatch['fullName']} tanildi!");
+          setState(() {
+            _faceRecognized = true;
+            _statusMessage =
+                "${bestMatch['name']} tanildi! Tizimga kirilmoqda...";
+          });
 
           await Future.delayed(const Duration(seconds: 2));
 
           if (mounted) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                  builder: (context) =>
-                      MainScreen(userRole: bestMatch['role'])),
+              MaterialPageRoute(builder: (context) => const MainScreen()),
             );
           }
         } else {
@@ -151,25 +153,29 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
     } catch (e) {
       debugPrint("Yuzni tahlil qilishda xatolik: $e");
     } finally {
-      if (mounted) setState(() => _isProcessing = false);
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
     }
   }
 
+  /// Aniqlangan yuz izini bazadagi mavjud izlar bilan solishtiradi
   Map<String, dynamic>? _findBestMatch(List detectedEmbedding) {
     double minDistance = double.infinity;
     Map<String, dynamic>? bestMatch;
 
-    for (var user in _knownUsers) {
+    for (var employee in _knownEmployees) {
       final double distance =
-          _calculateDistance(user['embedding'], detectedEmbedding);
+          _calculateDistance(employee['embedding'], detectedEmbedding);
       if (distance < minDistance) {
         minDistance = distance;
-        bestMatch = user;
+        bestMatch = employee;
       }
     }
 
     if (minDistance < 1.0) {
-      // Aniqlik darajasi
       return bestMatch;
     }
 
@@ -187,7 +193,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Yuzni Skanerlash orqali kirish")),
+      appBar: AppBar(title: const Text("Yuzni Skanerlash")),
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -195,39 +201,57 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
             CameraPreview(_cameraController!)
           else
             const Center(child: CircularProgressIndicator()),
-          Center(
-            child: Container(
-              width: 280,
-              height: 380,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(140),
-                border: Border.all(
-                    color: _statusMessage.contains("tanildi")
-                        ? Colors.green
-                        : Colors.white,
-                    width: 4),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 50,
-            left: 20,
-            right: 20,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                  color: const Color.fromRGBO(0, 0, 0, 0.7),
-                  borderRadius: BorderRadius.circular(8)),
-              child: Text(_statusMessage,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500)),
-            ),
-          )
+          _buildFaceOverlay(),
+          _buildStatusMessage(),
         ],
       ),
     );
+  }
+
+  Widget _buildFaceOverlay() {
+    return Center(
+      child: Container(
+        width: 280,
+        height: 380,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(140),
+          border: Border.all(
+              color: _faceRecognized ? Colors.green : Colors.white, width: 4),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMessage() {
+    return Positioned(
+      bottom: 50,
+      left: 20,
+      right: 20,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+            color: const Color.fromRGBO(0, 0, 0, 0.7),
+            borderRadius: BorderRadius.circular(8)),
+        child: Text(_statusMessage,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500)),
+      ),
+    );
+  }
+
+  InputImageRotation _rotationIntToImageRotation(int rotation) {
+    switch (rotation) {
+      case 90:
+        return InputImageRotation.rotation90deg;
+      case 180:
+        return InputImageRotation.rotation180deg;
+      case 270:
+        return InputImageRotation.rotation270deg;
+      default:
+        return InputImageRotation.rotation0deg;
+    }
   }
 }
