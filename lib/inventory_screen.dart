@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:savdo_uz/barcode_scanner_screen.dart'; // Yangi skaner sahifasini import qilamiz
 
-// Qidiruv funksiyasi uchun StatefulWidget'ga o'zgartirdik
+// TODO: Bu sahifani Firestore bilan bog'lash kerak bo'ladi. Hozircha dizayn va mantiq tayyor.
+
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
 
@@ -10,13 +11,31 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
-  // --- QIDIRUV UCHUN YANGI QO'SHIMCHALAR ---
-  final _searchController = TextEditingController();
+  // Qidiruv uchun TextEditingController
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+
+  // Skaner sahifasini ochish va natijani olish
+  Future<void> _scanBarcode() async {
+    // Skaner sahifasiga o'tamiz va natijani (shtrix-kodni) kutamiz
+    final String? barcode = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+    );
+
+    if (barcode != null && barcode.isNotEmpty) {
+      // Skanerlangan kodni qidiruv maydoniga joylaymiz va qidiruvni boshlaymiz
+      setState(() {
+        _searchController.text = barcode;
+        _searchQuery = barcode;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    // Qidiruv maydonidagi o'zgarishlarni kuzatib boramiz
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text;
@@ -29,140 +48,112 @@ class _InventoryScreenState extends State<InventoryScreen> {
     _searchController.dispose();
     super.dispose();
   }
-  // --- QIDIRUV QISMI TUGADI ---
 
   @override
   Widget build(BuildContext context) {
-    // Ombordagi mahsulotlar uchun stream
-    final Stream<QuerySnapshot> warehouseStream =
-        FirebaseFirestore.instance.collection('products').snapshots();
-    // Do'kondagi mahsulotlar uchun stream
-    final Stream<QuerySnapshot> shopStream =
-        FirebaseFirestore.instance.collection('shop_stock').snapshots();
-
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          backgroundColor: Colors.white,
-          elevation: 1,
-          title: const TabBar(
-            labelColor: Colors.blue,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.blue,
-            tabs: [
-              Tab(text: "Do'kon Qoldig'i"),
-              Tab(text: "Ombor Qoldig'i"),
-            ],
-          ),
-        ),
-        // Qidiruv maydonini va TabBarView'ni Column'ga o'radik
-        body: Column(
-          children: [
-            // --- YANGI QIDIRUV MAYDONI ---
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Mahsulotni qidirish...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => _searchController.clear(),
-                        )
-                      : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
-              ),
-            ),
-            // --- QIDIRUV MAYDONI TUGADI ---
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildInventoryList(
-                      shopStream, "Do'konda mahsulotlar mavjud emas"),
-                  _buildInventoryList(
-                      warehouseStream, "Omborda mahsulotlar mavjud emas"),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Qoldiqlar ro'yxatini chizuvchi umumiy vidjet (qidiruv mantig'i bilan)
-  Widget _buildInventoryList(
-      Stream<QuerySnapshot> stream, String emptyMessage) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: stream,
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Xatolik yuz berdi'));
-        }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.data!.docs.isEmpty) {
-          return Center(child: Text(emptyMessage));
-        }
-
-        // --- QIDIRUV BO'YICHA FILTRLASH ---
-        var documents = snapshot.data!.docs;
-        if (_searchQuery.isNotEmpty) {
-          documents = documents.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final name = (data['name'] as String?)?.toLowerCase() ?? '';
-            return name.contains(_searchQuery.toLowerCase());
-          }).toList();
-        }
-
-        if (documents.isEmpty) {
-          return const Center(
-              child: Text("Qidiruv bo'yicha mahsulot topilmadi."));
-        }
-        // --- FILTRLASH TUGADI ---
-
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          children: documents.map((DocumentSnapshot document) {
-            Map<String, dynamic> data =
-                document.data()! as Map<String, dynamic>;
-            // Narxni to'g'ri maydondan olish (do'kon uchun 'sellingPrice', ombor uchun 'costPrice')
-            final price = data.containsKey('sellingPrice')
-                ? data['sellingPrice']
-                : data['costPrice'];
-
-            return Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  child: Text(data['name']?.substring(0, 1) ?? '?'),
-                ),
-                title: Text(data['name'] ?? 'Nomsiz',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle:
-                    Text("Narxi: ${price?.toStringAsFixed(0) ?? '0'} so'm"),
-                trailing: Text(
-                  "${data['quantity']} ${data['unit']}",
-                  style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue),
-                ),
-              ),
-            );
-          }).toList(),
-        );
+    // TODO: Bu ro'yxatni Firestore'dan olingan haqiqiy mahsulotlar bilan almashtiring
+    final List<Map<String, String>> allProducts = [
+      {'name': 'Non', 'barcode': '1234567890123', 'quantity': '50 dona'},
+      {'name': 'Sut (1L)', 'barcode': '9876543210987', 'quantity': '30 dona'},
+      {
+        'name': 'Coca-Cola (1.5L)',
+        'barcode': '5432109876543',
+        'quantity': '100 dona'
       },
+    ];
+
+    // Qidiruv natijasiga ko'ra mahsulotlarni filtrlash
+    final List<Map<String, String>> filteredProducts = _searchQuery.isEmpty
+        ? allProducts
+        : allProducts.where((product) {
+            final nameLower = product['name']!.toLowerCase();
+            final barcodeLower = product['barcode']!.toLowerCase();
+            final queryLower = _searchQuery.toLowerCase();
+            return nameLower.contains(queryLower) ||
+                barcodeLower.contains(queryLower);
+          }).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Omborxona (Mahsulotlar)'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Yangi mahsulot qo\'shish',
+            onPressed: () {
+              // TODO: Yangi mahsulot qo'shish logikasi
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Qidiruv va Skanerlash paneli
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      labelText: 'Nomi yoki shtrix-kod bo\'yicha qidirish',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      // Qidiruv maydonini tozalash tugmasi
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Skanerlash tugmasi
+                IconButton.filled(
+                  iconSize: 30,
+                  icon: const Icon(Icons.qr_code_scanner),
+                  onPressed: _scanBarcode,
+                  tooltip: 'Shtrix-kodni skanerlash',
+                ),
+              ],
+            ),
+          ),
+
+          // Mahsulotlar ro'yxati
+          Expanded(
+            child: filteredProducts.isEmpty
+                ? const Center(child: Text("Mahsulotlar topilmadi."))
+                : ListView.builder(
+                    itemCount: filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = filteredProducts[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                              child: Icon(Icons.inventory_2_outlined)),
+                          title: Text(product['name']!),
+                          subtitle: Text("Shtrix-kod: ${product['barcode']!}"),
+                          trailing: Text(
+                            product['quantity']!,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

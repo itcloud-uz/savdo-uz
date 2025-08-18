@@ -1,15 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+// Barcha kerakli sahifalarni import qilamiz
+import 'package:savdo_uz/attendance_screen.dart'; // Davomat sahifasi import qilindi
+import 'package:savdo_uz/debt_ledger_screen.dart';
+import 'package:savdo_uz/expenses_screen.dart';
 import 'package:savdo_uz/login_screen.dart';
 import 'package:savdo_uz/pos_screen.dart';
 import 'package:savdo_uz/inventory_screen.dart';
+import 'package:savdo_uz/customers_screen.dart';
 import 'package:savdo_uz/employees_screen.dart';
 import 'package:savdo_uz/reports_screen.dart';
-// FirestoreService'ni import qilamiz, chunki unda formatCurrency funksiyasi bor
 import 'package:savdo_uz/services/firestore_service.dart';
 
-// "Tezkor Amallar" uchun alohida model klass. Bu kodni xavfsizroq va o'qilishi oson qiladi.
+// "Tezkor Amallar" uchun alohida model klass.
 class _QuickAction {
   final IconData icon;
   final String label;
@@ -30,7 +35,7 @@ class _MainScreenState extends State<MainScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  // "Tezkor amallar" ro'yxati endi yuqoridagi modeldan foydalanadi
+  // "Tezkor amallar" ro'yxatiga "Davomat" bo'limi qo'shildi
   final List<_QuickAction> _quickActions = const [
     _QuickAction(
         icon: Icons.point_of_sale_outlined,
@@ -40,6 +45,22 @@ class _MainScreenState extends State<MainScreen> {
         icon: Icons.inventory_2_outlined,
         label: 'Mahsulotlar',
         screen: InventoryScreen()),
+    _QuickAction(
+        icon: Icons.people_outline,
+        label: 'Mijozlar',
+        screen: CustomersScreen()),
+    _QuickAction(
+        icon: Icons.book_outlined,
+        label: 'Qarz Daftari',
+        screen: DebtLedgerScreen()),
+    _QuickAction(
+        icon: Icons.request_quote_outlined,
+        label: 'Xarajatlar',
+        screen: ExpensesScreen()),
+    _QuickAction(
+        icon: Icons.co_present_outlined, // Davomat uchun ikonka
+        label: 'Davomat',
+        screen: AttendanceScreen()), // Yangi sahifaga ulanish
     _QuickAction(
         icon: Icons.group_outlined,
         label: 'Xodimlar',
@@ -142,9 +163,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildQuickActionsGrid(BuildContext context) {
-    // Ekran o'lchamiga qarab ustunlar sonini moslashtirish
     int crossAxisCount = (MediaQuery.of(context).size.width / 180).floor();
-
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -183,10 +202,8 @@ class _MainScreenState extends State<MainScreen> {
         if (snapshot.hasError) {
           return const Center(child: Text("Ma'lumotlarni yuklashda xatolik"));
         }
-
         double totalSales = 0.0;
         int salesCount = 0;
-
         if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
           final salesDocs = snapshot.data!.docs;
           totalSales = salesDocs.fold<double>(0.0, (currentSum, doc) {
@@ -195,14 +212,13 @@ class _MainScreenState extends State<MainScreen> {
           });
           salesCount = salesDocs.length;
         }
-
         return Row(
           children: [
             Expanded(
               child: SummaryCard(
                   title: 'Bugungi Savdo',
-                  value: formatCurrency(totalSales).replaceAll(
-                      RegExp(r'\D'), ''), // Raqamlarni ajratib oladi
+                  value:
+                      formatCurrency(totalSales).replaceAll(RegExp(r'\D'), ''),
                   unit: "so'm",
                   icon: Icons.trending_up,
                   color: Colors.green),
@@ -240,9 +256,7 @@ class _MainScreenState extends State<MainScreen> {
             ),
           );
         }
-
         final recentSales = snapshot.data!.docs;
-
         return Card(
           child: ListView.separated(
             shrinkWrap: true,
@@ -281,7 +295,6 @@ class SummaryCard extends StatelessWidget {
   final Color color;
   final bool isLoading;
 
-  // Asosiy konstruktor
   const SummaryCard({
     super.key,
     required this.title,
@@ -291,7 +304,6 @@ class SummaryCard extends StatelessWidget {
     required this.color,
   }) : isLoading = false;
 
-  // XATO BERMASLIGI UCHUN "loading" NOMli maxsus konstruktor
   const SummaryCard.loading({super.key})
       : title = '',
         value = '',
@@ -358,7 +370,9 @@ class ActionCard extends StatelessWidget {
           children: [
             Icon(icon, size: 32, color: Theme.of(context).primaryColor),
             const SizedBox(height: 8),
-            Text(label, style: Theme.of(context).textTheme.titleMedium),
+            Text(label,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center),
           ],
         ),
       ),

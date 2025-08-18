@@ -1,21 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:savdo_uz/face_recognition_service.dart'; // Buni o'zgartirmang
+
+// Servislarni import qilamiz
+import 'package:savdo_uz/face_recognition_service.dart';
+import 'package:savdo_uz/services/firestore_service.dart';
 
 // --- Model Class ---
-// Ma'lumotlar bazasi tuzilmasiga mos keladigan sinf.
-// "pinCode" -> "password" ga o'zgartirildi.
 class Employee {
   final String id;
   final String name;
   final String login;
   final String role;
   final String? imageUrl;
-  final List? faceEmbedding; // Yuz ma'lumotlari uchun maydon
+  final List? faceEmbedding;
 
   Employee({
     required this.id,
@@ -40,11 +40,18 @@ class Employee {
 }
 
 // --- Asosiy Ekran ---
-// Barcha xodimlar ro'yxatini ko'rsatadi.
-class EmployeesScreen extends StatelessWidget {
+class EmployeesScreen extends StatefulWidget {
   const EmployeesScreen({super.key});
 
-  void _navigateToAddEmployee(BuildContext context, {Employee? employee}) {
+  @override
+  State<EmployeesScreen> createState() => _EmployeesScreenState();
+}
+
+class _EmployeesScreenState extends State<EmployeesScreen> {
+  // Endi FirestoreService'dan foydalanamiz
+  final FirestoreService _firestoreService = FirestoreService();
+
+  void _navigateToAddEditEmployee(BuildContext context, {Employee? employee}) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -56,19 +63,19 @@ class EmployeesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Orqaga qaytish tugmasi va sarlavha uchun AppBar qo'shildi.
       appBar: AppBar(
         title: const Text("Xodimlarni Boshqarish"),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
             tooltip: "Yangi xodim qo'shish",
-            onPressed: () => _navigateToAddEmployee(context),
+            onPressed: () => _navigateToAddEditEmployee(context),
           ),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').snapshots(),
+        // Ma'lumotlarni to'g'ridan-to'g'ri servisdan olamiz
+        stream: _firestoreService.getEmployees(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -91,8 +98,8 @@ class EmployeesScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               return _EmployeeCard(
                 employee: employees[index],
-                onEdit: () =>
-                    _navigateToAddEmployee(context, employee: employees[index]),
+                onEdit: () => _navigateToAddEditEmployee(context,
+                    employee: employees[index]),
                 onDelete: () =>
                     _showDeleteConfirmationDialog(context, employees[index]),
               );
@@ -117,17 +124,9 @@ class EmployeesScreen extends StatelessWidget {
             onPressed: () async {
               try {
                 final navigator = Navigator.of(context);
-                // Rasmni Storage'dan o'chirish
-                if (employee.imageUrl != null) {
-                  await FirebaseStorage.instance
-                      .refFromURL(employee.imageUrl!)
-                      .delete();
-                }
-                // Ma'lumotni Firestore'dan o'chirish
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(employee.id)
-                    .delete();
+                // O'chirish logikasi ham servisga o'tkazildi
+                await _firestoreService.deleteEmployee(employee.id,
+                    imageUrl: employee.imageUrl);
                 navigator.pop();
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +143,6 @@ class EmployeesScreen extends StatelessWidget {
 }
 
 // --- Xodim Kartochkasi Vidjeti ---
-// Kodni toza saqlash uchun alohida vidjet.
 class _EmployeeCard extends StatelessWidget {
   final Employee employee;
   final VoidCallback onEdit;
@@ -195,10 +193,8 @@ class _EmployeeCard extends StatelessWidget {
 }
 
 // --- XODIM QO'SHISH / TAHRIRLASH SAHIFASI ---
-// Dialog o'rniga ishlatiladigan yangi, toza sahifa.
 class AddEditEmployeeScreen extends StatefulWidget {
   final Employee? employee;
-
   const AddEditEmployeeScreen({super.key, this.employee});
 
   @override
@@ -208,6 +204,7 @@ class AddEditEmployeeScreen extends StatefulWidget {
 class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _faceService = FaceRecognitionService();
+  final _firestoreService = FirestoreService(); // Servisdan nusxa olamiz
 
   late final TextEditingController _nameController;
   late final TextEditingController _loginController;
@@ -224,8 +221,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.employee?.name);
     _loginController = TextEditingController(text: widget.employee?.login);
-    _passwordController =
-        TextEditingController(); // Parol har doim bo'sh boshlanadi
+    _passwordController = TextEditingController();
     _selectedRole = widget.employee?.role ?? 'Sotuvchi';
     _existingImageUrl = widget.employee?.imageUrl;
   }
@@ -240,8 +236,8 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   }
 
   Future<void> _pickImage() async {
-    final image = await ImagePicker()
-        .pickImage(source: ImageSource.gallery, imageQuality: 70);
+    // Rasm tanlash logikasi servisga o'tkazildi
+    final image = await _firestoreService.pickImage();
     if (image != null) {
       setState(() {
         _pickedImage = image;
@@ -251,8 +247,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
 
   Future<void> _saveEmployee() async {
     if (!_formKey.currentState!.validate()) return;
-
-    // Tahrirlash rejimida parol kiritilmasa, majburiy emas
     if (widget.employee == null && _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text("Yangi xodim uchun parol kiritilishi shart!"),
@@ -262,7 +256,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     }
 
     setState(() => _isProcessing = true);
-
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
@@ -270,9 +263,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
       String? imageUrl = _existingImageUrl;
       List? faceEmbedding = widget.employee?.faceEmbedding;
 
-      // 1. Agar yangi rasm tanlansa, uni qayta ishlaymiz
       if (_pickedImage != null) {
-        // Yuzni topish va embedding olish
         faceEmbedding =
             await _faceService.processImageFileForEmbedding(_pickedImage!);
         if (faceEmbedding == null) {
@@ -283,16 +274,11 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
           setState(() => _isProcessing = false);
           return;
         }
-
-        // Rasmni Storage'ga yuklash
-        final ref = FirebaseStorage.instance
-            .ref()
-            .child('user_images/${DateTime.now().toIso8601String()}.jpg');
-        await ref.putFile(File(_pickedImage!.path));
-        imageUrl = await ref.getDownloadURL();
+        // Rasmni yuklash logikasi servisga o'tkazildi
+        imageUrl = await _firestoreService
+            .uploadEmployeeImage(File(_pickedImage!.path));
       }
 
-      // 2. Ma'lumotlarni tayyorlash
       final userData = <String, dynamic>{
         'fullName': _nameController.text,
         'login': _loginController.text,
@@ -301,20 +287,16 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
         'faceEmbedding': faceEmbedding,
       };
 
-      // Agar parol kiritilgan bo'lsa, uni qo'shamiz (heshlash tavsiya etiladi)
       if (_passwordController.text.isNotEmpty) {
         userData['password'] = _passwordController.text;
       }
 
-      // 3. Firestore'ga saqlash
       if (widget.employee == null) {
-        userData['createdAt'] = Timestamp.now();
-        await FirebaseFirestore.instance.collection('users').add(userData);
+        // Ma'lumot qo'shish logikasi servisga o'tkazildi
+        await _firestoreService.addEmployee(userData);
       } else {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.employee!.id)
-            .update(userData);
+        // Ma'lumotni yangilash logikasi servisga o'tkazildi
+        await _firestoreService.updateEmployee(widget.employee!.id, userData);
       }
 
       messenger.showSnackBar(
@@ -342,7 +324,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Rasm tanlash qismi
               Center(
                 child: Stack(
                   children: [
@@ -371,8 +352,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
-              // Ism-familiya maydoni
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: "To'liq ismi"),
@@ -380,8 +359,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                     (value == null || value.isEmpty) ? "Ismni kiriting" : null,
               ),
               const SizedBox(height: 16),
-
-              // Login maydoni
               TextFormField(
                 controller: _loginController,
                 decoration: const InputDecoration(labelText: "Login"),
@@ -390,8 +367,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                     : null,
               ),
               const SizedBox(height: 16),
-
-              // Parol maydoni ("pin-kod" o'rniga)
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
@@ -401,12 +376,10 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                         ? "O'zgartirish uchun kiriting"
                         : null),
                 validator: (value) {
-                  // Yangi xodim uchun parol majburiy
                   if (widget.employee == null &&
                       (value == null || value.isEmpty)) {
                     return "Parolni kiriting";
                   }
-                  // Agar parol kiritilsa, kamida 6ta belgi bo'lishi kerak
                   if (value != null && value.isNotEmpty && value.length < 6) {
                     return "Parol kamida 6 belgidan iborat bo'lishi kerak";
                   }
@@ -414,8 +387,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Rolni tanlash
               DropdownButtonFormField<String>(
                 value: _selectedRole,
                 items: _roles
@@ -426,8 +397,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                 decoration: const InputDecoration(labelText: "Roli"),
               ),
               const SizedBox(height: 32),
-
-              // Saqlash tugmasi
               _isProcessing
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton.icon(
