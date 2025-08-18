@@ -1,21 +1,22 @@
+// lib/employees_screen.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-// Servislarni import qilamiz
 import 'package:savdo_uz/face_recognition_service.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 
-// --- Model Class ---
+/// Employee model sinfi
 class Employee {
   final String id;
   final String name;
   final String login;
   final String role;
   final String? imageUrl;
-  final List? faceEmbedding;
+  final List<dynamic>? faceEmbedding;
 
   Employee({
     required this.id,
@@ -27,19 +28,19 @@ class Employee {
   });
 
   factory Employee.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final data = doc.data() as Map<String, dynamic>;
     return Employee(
       id: doc.id,
       name: data['fullName'] ?? 'Nomsiz',
       login: data['login'] ?? 'noma\'lum',
       role: data['role'] ?? 'Noma\'lum',
-      imageUrl: data['imageUrl'],
-      faceEmbedding: data['faceEmbedding'],
+      imageUrl: data['imageUrl'] as String?,
+      faceEmbedding: data['faceEmbedding'] as List<dynamic>?,
     );
   }
 }
 
-// --- Asosiy Ekran ---
+/// Xodimlar sahifasi (list)
 class EmployeesScreen extends StatefulWidget {
   const EmployeesScreen({super.key});
 
@@ -48,14 +49,51 @@ class EmployeesScreen extends StatefulWidget {
 }
 
 class _EmployeesScreenState extends State<EmployeesScreen> {
-  // Endi FirestoreService'dan foydalanamiz
   final FirestoreService _firestoreService = FirestoreService();
 
-  void _navigateToAddEditEmployee(BuildContext context, {Employee? employee}) {
+  void _navigateToAddEditEmployee([Employee? employee]) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddEditEmployeeScreen(employee: employee),
+        builder: (_) => AddEditEmployeeScreen(employee: employee),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext ctx, Employee emp) {
+    showDialog(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        title: const Text("O'chirishni tasdiqlash"),
+        content: Text("Haqiqatan ham ${emp.name} ni o'chirmoqchimisiz?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Bekor qilish"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await _firestoreService.deleteEmployee(emp.id,
+                    imageUrl: emp.imageUrl);
+                if (mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text("O‘chirildi")),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    SnackBar(content: Text("Xatolik: $e")),
+                  );
+                }
+              }
+            },
+            child: const Text("O'chirish"),
+          ),
+        ],
       ),
     );
   }
@@ -68,24 +106,20 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            tooltip: "Yangi xodim qo'shish",
-            onPressed: () => _navigateToAddEditEmployee(context),
+            tooltip: "Yangi xodim qo‘shish",
+            onPressed: () => _navigateToAddEditEmployee(),
           ),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // Ma'lumotlarni to'g'ridan-to'g'ri servisdan olamiz
         stream: _firestoreService.getEmployees(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return const Center(
-                child: Text("Ma'lumotlarni yuklashda xatolik yuz berdi."));
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Xodimlar mavjud emas."));
+          } else if (snapshot.hasError) {
+            return const Center(child: Text("Maʼlumot yuklab bo‘lmadi"));
+          } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Xodimlar mavjud emas"));
           }
 
           final employees = snapshot.data!.docs
@@ -93,15 +127,14 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
               .toList();
 
           return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             itemCount: employees.length,
             itemBuilder: (context, index) {
+              final emp = employees[index];
               return _EmployeeCard(
-                employee: employees[index],
-                onEdit: () => _navigateToAddEditEmployee(context,
-                    employee: employees[index]),
-                onDelete: () =>
-                    _showDeleteConfirmationDialog(context, employees[index]),
+                employee: emp,
+                onEdit: () => _navigateToAddEditEmployee(emp),
+                onDelete: () => _showDeleteConfirmation(context, emp),
               );
             },
           );
@@ -109,40 +142,8 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       ),
     );
   }
-
-  void _showDeleteConfirmationDialog(BuildContext context, Employee employee) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("O'chirishni tasdiqlash"),
-        content: Text("Haqiqatan ham ${employee.name}ni o'chirmoqchimisiz?"),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Bekor qilish")),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                final navigator = Navigator.of(context);
-                // O'chirish logikasi ham servisga o'tkazildi
-                await _firestoreService.deleteEmployee(employee.id,
-                    imageUrl: employee.imageUrl);
-                navigator.pop();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("O'chirishda xatolik: $e")));
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text("O'chirish"),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// --- Xodim Kartochkasi Vidjeti ---
 class _EmployeeCard extends StatelessWidget {
   final Employee employee;
   final VoidCallback onEdit;
@@ -169,22 +170,22 @@ class _EmployeeCard extends StatelessWidget {
               ? const Icon(Icons.person_outline, color: Colors.grey)
               : null,
         ),
-        title: Text(employee.name,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          employee.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text("${employee.role} | Login: ${employee.login}"),
         trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'edit') {
-              onEdit();
-            } else if (value == 'delete') {
-              onDelete();
-            }
+          onSelected: (val) {
+            if (val == 'edit') onEdit();
+            if (val == 'delete') onDelete();
           },
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'edit', child: Text('Tahrirlash')),
-            const PopupMenuItem(
-                value: 'delete',
-                child: Text('O\'chirish', style: TextStyle(color: Colors.red))),
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: 'edit', child: Text('Tahrirlash')),
+            PopupMenuItem(
+              value: 'delete',
+              child: Text("O'chirish", style: TextStyle(color: Colors.red)),
+            ),
           ],
         ),
       ),
@@ -192,7 +193,7 @@ class _EmployeeCard extends StatelessWidget {
   }
 }
 
-// --- XODIM QO'SHISH / TAHRIRLASH SAHIFASI ---
+/// Xodim qo‘shish/tahrirlash ekrani
 class AddEditEmployeeScreen extends StatefulWidget {
   final Employee? employee;
   const AddEditEmployeeScreen({super.key, this.employee});
@@ -203,111 +204,114 @@ class AddEditEmployeeScreen extends StatefulWidget {
 
 class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _faceService = FaceRecognitionService();
-  final _firestoreService = FirestoreService(); // Servisdan nusxa olamiz
+  final FaceRecognitionService _faceService = FaceRecognitionService();
+  final FirestoreService _firestoreService = FirestoreService();
 
-  late final TextEditingController _nameController;
-  late final TextEditingController _loginController;
-  late final TextEditingController _passwordController;
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _loginCtrl;
+  late final TextEditingController _passwordCtrl;
   String? _selectedRole;
-  final _roles = ['Sotuvchi', 'Omborchi', 'Admin'];
+  final List<String> _roles = ['Sotuvchi', 'Omborchi', 'Admin'];
 
   XFile? _pickedImage;
-  String? _existingImageUrl;
-  bool _isProcessing = false;
+  String? _existingUrl;
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.employee?.name);
-    _loginController = TextEditingController(text: widget.employee?.login);
-    _passwordController = TextEditingController();
-    _selectedRole = widget.employee?.role ?? 'Sotuvchi';
-    _existingImageUrl = widget.employee?.imageUrl;
+    _nameCtrl = TextEditingController(text: widget.employee?.name);
+    _loginCtrl = TextEditingController(text: widget.employee?.login);
+    _passwordCtrl = TextEditingController();
+    _selectedRole = widget.employee?.role ?? _roles.first;
+    _existingUrl = widget.employee?.imageUrl;
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _loginController.dispose();
-    _passwordController.dispose();
+    _nameCtrl.dispose();
+    _loginCtrl.dispose();
+    _passwordCtrl.dispose();
     _faceService.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
-    // Rasm tanlash logikasi servisga o'tkazildi
-    final image = await _firestoreService.pickImage();
-    if (image != null) {
-      setState(() {
-        _pickedImage = image;
-      });
+    final img = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (img != null) {
+      setState(() => _pickedImage = img);
     }
   }
 
-  Future<void> _saveEmployee() async {
+  Future<void> _onSave() async {
     if (!_formKey.currentState!.validate()) return;
-    if (widget.employee == null && _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Yangi xodim uchun parol kiritilishi shart!"),
-        backgroundColor: Colors.red,
-      ));
+
+    if (widget.employee == null && _passwordCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Yangi xodim uchun parol kiritilishi shart!"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
-    setState(() => _isProcessing = true);
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
+    setState(() => _loading = true);
+
+    List<dynamic>? embedding = widget.employee?.faceEmbedding;
+    String? imgUrl = _existingUrl;
 
     try {
-      String? imageUrl = _existingImageUrl;
-      List? faceEmbedding = widget.employee?.faceEmbedding;
-
       if (_pickedImage != null) {
-        faceEmbedding =
+        final e =
             await _faceService.processImageFileForEmbedding(_pickedImage!);
-        if (faceEmbedding == null) {
-          messenger.showSnackBar(const SnackBar(
-            content: Text("Rasmdan yuz topilmadi! Boshqa rasm tanlang."),
-            backgroundColor: Colors.red,
-          ));
-          setState(() => _isProcessing = false);
+        if (e == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Yuz topilmadi!"),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _loading = false);
           return;
         }
-        // Rasmni yuklash logikasi servisga o'tkazildi
-        imageUrl = await _firestoreService
+        embedding = e;
+        imgUrl = await _firestoreService
             .uploadEmployeeImage(File(_pickedImage!.path));
       }
 
-      final userData = <String, dynamic>{
-        'fullName': _nameController.text,
-        'login': _loginController.text,
+      final dataMap = {
+        'fullName': _nameCtrl.text,
+        'login': _loginCtrl.text,
         'role': _selectedRole,
-        'imageUrl': imageUrl,
-        'faceEmbedding': faceEmbedding,
+        'imageUrl': imgUrl,
+        'faceEmbedding': embedding,
       };
 
-      if (_passwordController.text.isNotEmpty) {
-        userData['password'] = _passwordController.text;
+      if (_passwordCtrl.text.isNotEmpty) {
+        dataMap['password'] = _passwordCtrl.text;
       }
 
       if (widget.employee == null) {
-        // Ma'lumot qo'shish logikasi servisga o'tkazildi
-        await _firestoreService.addEmployee(userData);
+        await _firestoreService.addEmployee(dataMap);
       } else {
-        // Ma'lumotni yangilash logikasi servisga o'tkazildi
-        await _firestoreService.updateEmployee(widget.employee!.id, userData);
+        await _firestoreService.updateEmployee(widget.employee!.id, dataMap);
       }
 
-      messenger.showSnackBar(
-          const SnackBar(content: Text("Muvaffaqiyatli saqlandi!")));
-      navigator.pop();
-    } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text("Xatolik yuz berdi: $e")));
-    } finally {
       if (mounted) {
-        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Saqlash muvaffaqiyatli!")),
+        );
+        Navigator.pop(context);
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Xatolik: $e")),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -315,10 +319,10 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.employee == null ? 'Yangi Xodim' : 'Tahrirlash'),
+        title: Text(widget.employee == null ? 'Yangi xodim' : 'Tahrirlash'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(20),
         child: Form(
           key: _formKey,
           child: Column(
@@ -332,10 +336,10 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                       backgroundColor: Colors.grey.shade200,
                       backgroundImage: _pickedImage != null
                           ? FileImage(File(_pickedImage!.path))
-                          : (_existingImageUrl != null
-                              ? CachedNetworkImageProvider(_existingImageUrl!)
-                              : null) as ImageProvider?,
-                      child: _pickedImage == null && _existingImageUrl == null
+                          : (_existingUrl != null
+                              ? CachedNetworkImageProvider(_existingUrl!)
+                              : null) as ImageProvider<Object>?,
+                      child: _pickedImage == null && _existingUrl == null
                           ? Icon(Icons.person,
                               size: 60, color: Colors.grey.shade400)
                           : null,
@@ -353,14 +357,14 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
               ),
               const SizedBox(height: 24),
               TextFormField(
-                controller: _nameController,
+                controller: _nameCtrl,
                 decoration: const InputDecoration(labelText: "To'liq ismi"),
                 validator: (value) =>
                     (value == null || value.isEmpty) ? "Ismni kiriting" : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _loginController,
+                controller: _loginCtrl,
                 decoration: const InputDecoration(labelText: "Login"),
                 validator: (value) => (value == null || value.isEmpty)
                     ? "Loginni kiriting"
@@ -368,20 +372,21 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                controller: _passwordController,
+                controller: _passwordCtrl,
                 obscureText: true,
                 decoration: InputDecoration(
-                    labelText: "Parol",
-                    hintText: widget.employee != null
-                        ? "O'zgartirish uchun kiriting"
-                        : null),
+                  labelText: "Parol",
+                  hintText: widget.employee != null
+                      ? "O‘zgartirish uchun terningiz"
+                      : null,
+                ),
                 validator: (value) {
                   if (widget.employee == null &&
                       (value == null || value.isEmpty)) {
                     return "Parolni kiriting";
                   }
                   if (value != null && value.isNotEmpty && value.length < 6) {
-                    return "Parol kamida 6 belgidan iborat bo'lishi kerak";
+                    return "Kamida 6 ta belgi";
                   }
                   return null;
                 },
@@ -389,18 +394,20 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedRole,
+                decoration: const InputDecoration(labelText: "Roli"),
                 items: _roles
                     .map((role) =>
                         DropdownMenuItem(value: role, child: Text(role)))
                     .toList(),
-                onChanged: (value) => setState(() => _selectedRole = value!),
-                decoration: const InputDecoration(labelText: "Roli"),
+                onChanged: (value) {
+                  if (value != null) setState(() => _selectedRole = value);
+                },
               ),
               const SizedBox(height: 32),
-              _isProcessing
+              _loading
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton.icon(
-                      onPressed: _saveEmployee,
+                      onPressed: _onSave,
                       icon: const Icon(Icons.save_alt_outlined),
                       label: const Text("Saqlash"),
                       style: ElevatedButton.styleFrom(

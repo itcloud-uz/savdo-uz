@@ -4,23 +4,23 @@ import 'app_text_styles.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
-    final ThemeData base = ThemeData.light(useMaterial3: true);
-
-    return base.copyWith(
-      // 1. Asosiy ranglar va fon
-      primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: AppColors.background,
-
-      // 2. ColorScheme (Komponentlarning standart ranglari)
-      colorScheme: base.colorScheme.copyWith(
+    final base = ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
         primary: AppColors.primary,
         secondary: AppColors.accent,
+        surface: AppColors.card,
+        background: AppColors.background,
         error: AppColors.error,
-        surface: AppColors.card, // Card, Dialog kabi elementlar foni
-        surfaceContainer: AppColors.background, // background o‘rniga
+        brightness: Brightness.light,
       ),
+      fontFamily: 'Inter',
+    );
 
-      // 3. Matn stillari (Tipografiya)
+    return base.copyWith(
+      scaffoldBackgroundColor: AppColors.background,
+
       textTheme: base.textTheme
           .copyWith(
             displayLarge: AppTextStyles.headline1,
@@ -28,42 +28,45 @@ class AppTheme {
             displaySmall: AppTextStyles.headline3,
             bodyLarge: AppTextStyles.bodyText1,
             bodyMedium: AppTextStyles.bodyText2,
-            labelLarge: AppTextStyles.button, // Tugmalar uchun
+            labelLarge: AppTextStyles.button,
           )
           .apply(
-            fontFamily: 'Inter', // Barcha matnlarga yagona shrift
             displayColor: AppColors.textPrimary,
             bodyColor: AppColors.textPrimary,
           ),
 
-      // 4. AppBar uchun tema
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.card,
-        foregroundColor: AppColors.textPrimary, // Ikonka va sarlavha rangi
-        elevation: 1,
-        centerTitle: true, // Sarlavhani markazga joylash
-      ),
-
-      // 5. Card (Kartochka) uchun tema
-      cardTheme: CardThemeData(
-        elevation: 1, // Soyani biroz kamaytiramiz
-        color: AppColors.card,
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-          side: const BorderSide(
-            color: Color(0xFFE0E0E0),
-            width: 0.5,
-          ), // Yengil chegara
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0.5,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        titleTextStyle: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
         ),
       ),
 
-      // 6. ElevatedButton (Tugma) uchun tema
+      // ✅ CardTheme to‘g‘ri yozilgan
+      cardTheme: base.cardTheme.copyWith(
+        elevation: 1,
+        color: AppColors.card,
+        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(
+            color: Color(0xFFE0E0E0),
+            width: 0.5,
+          ),
+        ),
+      ),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -71,7 +74,6 @@ class AppTheme {
         ),
       ),
 
-      // 7. TextField (Matn kiritish maydoni) uchun tema
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.white,
@@ -90,26 +92,34 @@ class AppTheme {
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         labelStyle: AppTextStyles.bodyText2,
+        hintStyle: AppTextStyles.bodyText2.copyWith(color: Colors.grey),
       ),
 
-      // 8. FloatingActionButton (Qalqib turuvchi tugma) uchun tema
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.white,
       ),
 
-      // 9. Dialog (Muloqot oynasi) uchun tema
-      dialogTheme: DialogThemeData(
+      // ✅ DialogTheme to‘g‘ri yozilgan
+      dialogTheme: base.dialogTheme.copyWith(
         backgroundColor: AppColors.card,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
 
-      // 10. Divider (Ajratuvchi chiziq) uchun tema
       dividerTheme: const DividerThemeData(
         color: Color(0xFFE0E0E0),
         thickness: 1,
+      ),
+
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.primary.withOpacity(0.9),
+        contentTextStyle: AppTextStyles.bodyText2.copyWith(color: Colors.white),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
     );
   }

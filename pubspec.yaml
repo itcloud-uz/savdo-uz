@@ -1,58 +1,49 @@
 name: savdo_uz
-description: "A new Flutter project."
-publish_to: 'none' # Ilovani pub.dev'ga joylashtirishni taqiqlaydi
+description: A new Flutter project.
+publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0' # Zamonaviy Flutter versiyalari uchun
+  sdk: '>=3.3.0 <4.0.0'
 
-# --- ILOVA KUTUBXONALARI ---
 dependencies:
   flutter:
     sdk: flutter
 
-  # Asosiy yordamchi kutubxonalar
-  cupertino_icons: ^1.0.8
-  intl: ^0.19.0 # Sana, raqam va valyutalarni formatlash uchun (versiya yangilandi)
-
-  # Firebase xizmatlari (barcha paketlar bir-biriga mos versiyalarga yangilandi)
+  # Firebase
   firebase_core: ^2.31.0
-  cloud_firestore: ^4.17.3
   firebase_auth: ^4.19.5
+  cloud_firestore: ^4.17.3
   firebase_storage: ^11.7.5
 
-  # UI va yordamchi vidjetlar
-  cached_network_image: ^3.3.1 # Internetdan rasmlarni keshlab ko'rsatish uchun
-  qr_flutter: ^4.1.0           # Cheklar uchun QR-kod yaratish uchun (takrorlanish olib tashlandi)
-  fl_chart: ^0.68.0            # Hisobotlar uchun chiroyli grafiklar chizish uchun (versiya yangilandi)
+  # UI va foydali paketlar
+  cupertino_icons: ^1.0.8
+  intl: ^0.19.0
+  cached_network_image: ^3.3.1
+  qr_flutter: ^4.1.0
+  fl_chart: ^0.68.0
 
-  # Qurilma imkoniyatlari bilan ishlash
-  image_picker: ^1.1.2         # Galereyadan rasm tanlash uchun
-  camera: ^0.11.0+1            # Kamera bilan ishlash uchun (yuzni tanish uchun kerak)
-  mobile_scanner: ^5.1.1       # Shtrix-kod va QR-kod skanerlash uchun
+  # Qurilma imkoniyatlari
+  image_picker: ^1.1.2
+  camera: ^0.11.0+1
+  mobile_scanner: ^5.1.1
 
-  # Machine Learning (ML) va yuzni tanish
-  google_mlkit_face_detection: ^0.11.0 # Google ML Kit orqali yuzni aniqlash (versiya yangilandi)
-  image: ^4.2.0                        # Rasmlarni tahrirlash va qayta ishlash uchun
-  tflite_flutter: ^0.10.4              # TensorFlow Lite modellarini ishlatish uchun (versiya yangilandi)
+  # Machine Learning
+  google_mlkit_face_detection: ^0.11.0
+  image: ^4.1.7 
+  tflite_flutter: ^0.10.4
 
-  # Hisobot va hujjatlar
-  pdf: ^3.10.8      # PDF hujjatlarini yaratish uchun
-  printing: ^5.12.0 # Yaratilgan PDF'ni ko'rish va chop etish uchun (versiya yangilandi)
+  # Hujjatlar va hisobot
+  pdf: ^3.10.8
+  printing: ^5.12.0
 
-# --- ISHLAB CHIQISH UCHUN KUTUBXONALAR ---
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^4.0.0
 
-  # Kod sifatini nazorat qilish uchun
-  flutter_lints: ^4.0.0 # Tavsiya etilgan kod yozish qoidalari (versiya yangilandi)
-
-# --- FLUTTER SOZLAMALARI ---
 flutter:
   uses-material-design: true
-
-  # Loyihaga qo'shilgan fayllar (masalan, ML modellar uchun)
   assets:
     - assets/ml/

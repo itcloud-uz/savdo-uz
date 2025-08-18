@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddEditEmployeeScreen extends StatefulWidget {
   final DocumentSnapshot? document;
@@ -30,10 +31,10 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     super.initState();
     final data = widget.document?.data() as Map<String, dynamic>?;
 
-    _nameController = TextEditingController(text: data?['name'] ?? '');
+    _nameController = TextEditingController(text: data?['fullName'] ?? '');
     _positionController = TextEditingController(text: data?['position'] ?? '');
     _loginController = TextEditingController(text: data?['login'] ?? '');
-    _passwordController = TextEditingController(text: data?['password'] ?? '');
+    _passwordController = TextEditingController();
     _existingImageUrl = data?['imageUrl'];
   }
 
@@ -41,43 +42,57 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     final pickedFile = await _firestoreService.pickImage();
     if (pickedFile != null) {
       setState(() {
-        _imageFile = pickedFile;
+        _imageFile = File(pickedFile.path); // Convert XFile to File
       });
     }
   }
 
   Future<void> _saveEmployee() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      try {
-        String? imageUrl = _existingImageUrl;
+    setState(() {
+      _isLoading = true;
+    });
 
-        // Agar yangi rasm tanlangan bo'lsa, uni yuklaymiz
-        if (_imageFile != null) {
-          imageUrl = await _firestoreService.uploadImage(_imageFile!);
-        }
+    try {
+      String? imageUrl = _existingImageUrl;
 
-        await _firestoreService.saveEmployee(
-          id: widget.document?.id,
-          name: _nameController.text,
-          position: _positionController.text,
-          login: _loginController.text,
-          password: _passwordController.text,
-          imageUrl: imageUrl,
-        );
+      if (_imageFile != null) {
+        imageUrl = await _firestoreService.uploadEmployeeImage(_imageFile!);
+      }
 
+      final employeeData = {
+        'fullName': _nameController.text.trim(),
+        'position': _positionController.text.trim(),
+        'login': _loginController.text.trim(),
+        'imageUrl': imageUrl,
+      };
+
+      if (_passwordController.text.isNotEmpty) {
+        employeeData['password'] = _passwordController.text.trim();
+      }
+
+      if (widget.document == null) {
+        await _firestoreService.addEmployee(employeeData);
+      } else {
+        await _firestoreService.updateEmployee(
+            widget.document!.id, employeeData);
+      }
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Ma'lumotlar saqlandi!")),
         );
         Navigator.pop(context);
-      } catch (e) {
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Xatolik yuz berdi: $e")),
         );
-      } finally {
+      }
+    } finally {
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -168,18 +183,18 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                       decoration: const InputDecoration(labelText: 'Parol'),
                       obscureText: true,
                       validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          if (widget.document == null) {
-                            // Faqat yangi xodim uchun majburiy
-                            return 'Parolni kiriting';
-                          }
+                        if (widget.document == null &&
+                            (value == null || value.isEmpty)) {
+                          return 'Parolni kiriting';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 30),
                     ElevatedButton(
-                        onPressed: _saveEmployee, child: const Text("Saqlash"))
+                      onPressed: _saveEmployee,
+                      child: const Text("Saqlash"),
+                    )
                   ],
                 ),
               ),

@@ -1,9 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 // Barcha kerakli sahifalarni import qilamiz
-import 'package:savdo_uz/attendance_screen.dart'; // Davomat sahifasi import qilindi
+import 'package:savdo_uz/attendance_screen.dart';
 import 'package:savdo_uz/debt_ledger_screen.dart';
 import 'package:savdo_uz/expenses_screen.dart';
 import 'package:savdo_uz/login_screen.dart';
@@ -14,15 +14,48 @@ import 'package:savdo_uz/employees_screen.dart';
 import 'package:savdo_uz/reports_screen.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 
-// "Tezkor Amallar" uchun alohida model klass.
+// Tezkor amallar uchun model
 class _QuickAction {
   final IconData icon;
   final String label;
   final Widget screen;
 
-  const _QuickAction(
-      {required this.icon, required this.label, required this.screen});
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.screen,
+  });
 }
+
+// Tezkor amallar ro'yxati (o'zgarmas)
+final List<_QuickAction> _quickActions = [
+  _QuickAction(
+      icon: Icons.point_of_sale_outlined, label: 'Savdo', screen: PosScreen()),
+  _QuickAction(
+      icon: Icons.inventory_2_outlined,
+      label: 'Mahsulotlar',
+      screen: InventoryScreen()),
+  _QuickAction(
+      icon: Icons.people_outline, label: 'Mijozlar', screen: CustomersScreen()),
+  _QuickAction(
+      icon: Icons.book_outlined,
+      label: 'Qarz Daftari',
+      screen: DebtLedgerScreen()),
+  _QuickAction(
+      icon: Icons.request_quote_outlined,
+      label: 'Xarajatlar',
+      screen: ExpensesScreen()),
+  _QuickAction(
+      icon: Icons.co_present_outlined,
+      label: 'Davomat',
+      screen: AttendanceScreen()),
+  _QuickAction(
+      icon: Icons.group_outlined, label: 'Xodimlar', screen: EmployeesScreen()),
+  _QuickAction(
+      icon: Icons.bar_chart_outlined,
+      label: 'Hisobotlar',
+      screen: ReportsScreen()),
+];
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -34,42 +67,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
-
-  // "Tezkor amallar" ro'yxatiga "Davomat" bo'limi qo'shildi
-  final List<_QuickAction> _quickActions = const [
-    _QuickAction(
-        icon: Icons.point_of_sale_outlined,
-        label: 'Savdo',
-        screen: PosScreen()),
-    _QuickAction(
-        icon: Icons.inventory_2_outlined,
-        label: 'Mahsulotlar',
-        screen: InventoryScreen()),
-    _QuickAction(
-        icon: Icons.people_outline,
-        label: 'Mijozlar',
-        screen: CustomersScreen()),
-    _QuickAction(
-        icon: Icons.book_outlined,
-        label: 'Qarz Daftari',
-        screen: DebtLedgerScreen()),
-    _QuickAction(
-        icon: Icons.request_quote_outlined,
-        label: 'Xarajatlar',
-        screen: ExpensesScreen()),
-    _QuickAction(
-        icon: Icons.co_present_outlined, // Davomat uchun ikonka
-        label: 'Davomat',
-        screen: AttendanceScreen()), // Yangi sahifaga ulanish
-    _QuickAction(
-        icon: Icons.group_outlined,
-        label: 'Xodimlar',
-        screen: EmployeesScreen()),
-    _QuickAction(
-        icon: Icons.bar_chart_outlined,
-        label: 'Hisobotlar',
-        screen: ReportsScreen()),
-  ];
 
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
@@ -101,15 +98,15 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             _buildGreetingCard(),
             const SizedBox(height: 24),
-            _buildSectionTitle(context, 'Umumiy Holat'),
+            _buildSectionTitle('Umumiy Holat'),
             const SizedBox(height: 12),
             _buildSummaryCards(),
             const SizedBox(height: 24),
-            _buildSectionTitle(context, 'Tezkor Amallar'),
+            _buildSectionTitle('Tezkor Amallar'),
             const SizedBox(height: 12),
-            _buildQuickActionsGrid(context),
+            _buildQuickActionsGrid(),
             const SizedBox(height: 24),
-            _buildSectionTitle(context, "So'nggi Sotuvlar"),
+            _buildSectionTitle("So'nggi Sotuvlar"),
             const SizedBox(height: 12),
             _buildRecentSalesList(),
           ],
@@ -117,8 +114,6 @@ class _MainScreenState extends State<MainScreen> {
       ),
     );
   }
-
-  // --- Asosiy Vidjetlar ---
 
   Widget _buildGreetingCard() {
     return Card(
@@ -155,14 +150,14 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildSectionTitle(BuildContext context, String title) {
+  Widget _buildSectionTitle(String title) {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge,
     );
   }
 
-  Widget _buildQuickActionsGrid(BuildContext context) {
+  Widget _buildQuickActionsGrid() {
     int crossAxisCount = (MediaQuery.of(context).size.width / 180).floor();
     return GridView.builder(
       shrinkWrap: true,
@@ -216,21 +211,22 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             Expanded(
               child: SummaryCard(
-                  title: 'Bugungi Savdo',
-                  value:
-                      formatCurrency(totalSales).replaceAll(RegExp(r'\D'), ''),
-                  unit: "so'm",
-                  icon: Icons.trending_up,
-                  color: Colors.green),
+                title: 'Bugungi Savdo',
+                value: formatCurrency(totalSales),
+                unit: "so'm",
+                icon: Icons.trending_up,
+                color: Colors.green,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: SummaryCard(
-                  title: 'Sotuvlar Soni',
-                  value: salesCount.toString(),
-                  unit: 'ta',
-                  icon: Icons.receipt_long,
-                  color: Colors.orange),
+                title: 'Sotuvlar Soni',
+                value: salesCount.toString(),
+                unit: 'ta',
+                icon: Icons.receipt_long,
+                color: Colors.orange,
+              ),
             ),
           ],
         );
@@ -285,7 +281,7 @@ class _MainScreenState extends State<MainScreen> {
   }
 }
 
-// --- YORDAMCHI WIDGETLAR (Shu fayl ichida aniqlangan) ---
+// --- YORDAMCHI WIDGETLAR ---
 
 class SummaryCard extends StatelessWidget {
   final String title;
@@ -378,4 +374,13 @@ class ActionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// --- FORMATLANISH UCHUN FUNKSIYA ---
+// Pul summasini formatlash uchun. O'zingizga mos qilib o'zgartiring.
+// Masalan: 1200000 -> 1 200 000 so'm kabi ko'rsatish uchun.
+String formatCurrency(num amount) {
+  // Oddiy usulda minglik ajratish
+  return amount.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ');
 }
