@@ -1,11 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart'
+    hide AuthProvider; // <-- 'AuthProvider' yashirildi
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/sale_model.dart';
-import 'package:savdo_uz/providers/auth_provider.dart';
-
-// Barcha kerakli sahifalarni to'g'ri yo'llardan import qilamiz
+import 'package:savdo_uz/providers/auth_provider.dart'; // <-- Bizning AuthProvider'imiz
 import 'package:savdo_uz/screens/attendance/attendance_screen.dart';
 import 'package:savdo_uz/screens/debt/debt_ledger_screen.dart';
 import 'package:savdo_uz/screens/expenses/expenses_screen.dart';
@@ -120,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildGreetingCard(User? user) {
     return Card(
       elevation: 0,
-      color: Theme.of(context).primaryColor.withOpacity(0.05),
+      color: Theme.of(context).primaryColor.withValues(0.05),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -136,7 +135,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   Text(
-                    user?.email ?? 'Foydalanuvchi',
+                    user?.email ??
+                        'Foydalanuvchi', // Bu yerda ?? operatori o'rinli
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -262,7 +262,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final sale = recentSales[index];
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.shopping_bag)),
-                title: Text('Chek #${sale.saleId ?? 'N/A'}'),
+                title: Text('Chek #${sale.saleId}'), // <-- ?? olib tashlandi
                 subtitle: Text('${sale.items.length} ta mahsulot'),
                 trailing: Text(
                   formatCurrency(sale.totalAmount),

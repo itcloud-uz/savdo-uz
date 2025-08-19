@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/attendance_log_model.dart';
-import 'package.savdo_uz/services/firestore_service.dart';
+import 'package:savdo_uz/services/firestore_service.dart'; // <-- XATO TUZATILDI
 import 'package:savdo_uz/screens/scan/face_scan_screen.dart';
+import 'package:savdo_uz/widgets/loading_list_tile.dart';
 
 class AttendanceScreen extends StatelessWidget {
   const AttendanceScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Provider orqali servisni to'g'ri chaqiramiz
     final firestoreService = context.read<FirestoreService>();
 
     return Scaffold(
@@ -20,7 +22,11 @@ class AttendanceScreen extends StatelessWidget {
         stream: firestoreService.getAttendanceRecords(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            // Ma'lumotlar yuklanayotganda chiroyli animatsiya ko'rsatamiz
+            return ListView.builder(
+              itemCount: 7,
+              itemBuilder: (ctx, i) => const LoadingListTile(),
+            );
           }
           if (snapshot.hasError) {
             return Center(child: Text('Xatolik yuz berdi: ${snapshot.error}'));
