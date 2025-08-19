@@ -1,17 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:savdo_uz/models/sale_model.dart';
+import 'package:savdo_uz/providers/auth_provider.dart';
 
-// Barcha kerakli sahifalarni import qilamiz
-import 'package:savdo_uz/attendance_screen.dart';
-import 'package:savdo_uz/debt_ledger_screen.dart';
-import 'package:savdo_uz/expenses_screen.dart';
-import 'package:savdo_uz/login_screen.dart';
-import 'package:savdo_uz/pos_screen.dart';
-import 'package:savdo_uz/inventory_screen.dart';
-import 'package:savdo_uz/customers_screen.dart';
-import 'package:savdo_uz/employees_screen.dart';
-import 'package:savdo_uz/reports_screen.dart';
+// Barcha kerakli sahifalarni to'g'ri yo'llardan import qilamiz
+import 'package:savdo_uz/screens/attendance/attendance_screen.dart';
+import 'package:savdo_uz/screens/debt/debt_ledger_screen.dart';
+import 'package:savdo_uz/screens/expenses/expenses_screen.dart';
+import 'package:savdo_uz/screens/pos/pos_screen.dart';
+import 'package:savdo_uz/screens/inventory/inventory_screen.dart';
+import 'package:savdo_uz/screens/customer/customers_screen.dart';
+import 'package:savdo_uz/screens/employee/employees_screen.dart';
+import 'package:savdo_uz/screens/reports/reports_screen.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 
 // Tezkor amallar uchun model
@@ -27,59 +29,57 @@ class _QuickAction {
   });
 }
 
-// Tezkor amallar ro'yxati (o'zgarmas)
-final List<_QuickAction> _quickActions = [
-  _QuickAction(
-      icon: Icons.point_of_sale_outlined, label: 'Savdo', screen: PosScreen()),
-  _QuickAction(
-      icon: Icons.inventory_2_outlined,
-      label: 'Mahsulotlar',
-      screen: InventoryScreen()),
-  _QuickAction(
-      icon: Icons.people_outline, label: 'Mijozlar', screen: CustomersScreen()),
-  _QuickAction(
-      icon: Icons.book_outlined,
-      label: 'Qarz Daftari',
-      screen: DebtLedgerScreen()),
-  _QuickAction(
-      icon: Icons.request_quote_outlined,
-      label: 'Xarajatlar',
-      screen: ExpensesScreen()),
-  _QuickAction(
-      icon: Icons.co_present_outlined,
-      label: 'Davomat',
-      screen: AttendanceScreen()),
-  _QuickAction(
-      icon: Icons.group_outlined, label: 'Xodimlar', screen: EmployeesScreen()),
-  _QuickAction(
-      icon: Icons.bar_chart_outlined,
-      label: 'Hisobotlar',
-      screen: ReportsScreen()),
-];
-
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
-  final User? _currentUser = FirebaseAuth.instance.currentUser;
-
-  Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-        (route) => false,
-      );
-    }
-  }
+class _DashboardScreenState extends State<DashboardScreen> {
+  // Tezkor amallar ro'yxati
+  final List<_QuickAction> _quickActions = [
+    const _QuickAction(
+        icon: Icons.point_of_sale_outlined,
+        label: 'Kassa',
+        screen: POSScreen()),
+    const _QuickAction(
+        icon: Icons.inventory_2_outlined,
+        label: 'Omborxona',
+        screen: InventoryScreen()),
+    const _QuickAction(
+        icon: Icons.people_outline,
+        label: 'Mijozlar',
+        screen: CustomersScreen()),
+    const _QuickAction(
+        icon: Icons.book_outlined,
+        label: 'Qarz Daftari',
+        screen: DebtLedgerScreen()),
+    const _QuickAction(
+        icon: Icons.request_quote_outlined,
+        label: 'Xarajatlar',
+        screen: ExpensesScreen()),
+    const _QuickAction(
+        icon: Icons.co_present_outlined,
+        label: 'Davomat',
+        screen: AttendanceScreen()),
+    const _QuickAction(
+        icon: Icons.group_outlined,
+        label: 'Xodimlar',
+        screen: EmployeesScreen()),
+    const _QuickAction(
+        icon: Icons.bar_chart_outlined,
+        label: 'Hisobotlar',
+        screen: ReportsScreen()),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    // Servis va Provayderlarni Provider orqali olamiz
+    final firestoreService = context.read<FirestoreService>();
+    final authProvider = context.read<AuthProvider>();
+    final currentUser = authProvider.user;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Boshqaruv Paneli'),
@@ -87,7 +87,9 @@ class _MainScreenState extends State<MainScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Chiqish',
-            onPressed: _signOut,
+            onPressed: () async {
+              await authProvider.signOut();
+            },
           ),
         ],
       ),
@@ -96,11 +98,11 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildGreetingCard(),
+            _buildGreetingCard(currentUser),
             const SizedBox(height: 24),
             _buildSectionTitle('Umumiy Holat'),
             const SizedBox(height: 12),
-            _buildSummaryCards(),
+            _buildSummaryCards(firestoreService),
             const SizedBox(height: 24),
             _buildSectionTitle('Tezkor Amallar'),
             const SizedBox(height: 12),
@@ -108,14 +110,14 @@ class _MainScreenState extends State<MainScreen> {
             const SizedBox(height: 24),
             _buildSectionTitle("So'nggi Sotuvlar"),
             const SizedBox(height: 12),
-            _buildRecentSalesList(),
+            _buildRecentSalesList(firestoreService),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildGreetingCard() {
+  Widget _buildGreetingCard(User? user) {
     return Card(
       elevation: 0,
       color: Theme.of(context).primaryColor.withOpacity(0.05),
@@ -134,7 +136,7 @@ class _MainScreenState extends State<MainScreen> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   Text(
-                    _currentUser?.email ?? 'Foydalanuvchi',
+                    user?.email ?? 'Foydalanuvchi',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -183,9 +185,9 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildSummaryCards() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getSalesForToday(),
+  Widget _buildSummaryCards(FirestoreService firestoreService) {
+    return StreamBuilder<List<Sale>>(
+      stream: firestoreService.getSalesForToday(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Row(children: [
@@ -199,13 +201,11 @@ class _MainScreenState extends State<MainScreen> {
         }
         double totalSales = 0.0;
         int salesCount = 0;
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-          final salesDocs = snapshot.data!.docs;
-          totalSales = salesDocs.fold<double>(0.0, (currentSum, doc) {
-            final data = doc.data() as Map<String, dynamic>?;
-            return currentSum + (data?['totalAmount'] as num? ?? 0.0);
-          });
-          salesCount = salesDocs.length;
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          final sales = snapshot.data!;
+          totalSales =
+              sales.fold<double>(0.0, (sum, sale) => sum + sale.totalAmount);
+          salesCount = sales.length;
         }
         return Row(
           children: [
@@ -234,9 +234,9 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildRecentSalesList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getRecentSales(limit: 5),
+  Widget _buildRecentSalesList(FirestoreService firestoreService) {
+    return StreamBuilder<List<Sale>>(
+      stream: firestoreService.getRecentSales(limit: 5),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -244,7 +244,7 @@ class _MainScreenState extends State<MainScreen> {
         if (snapshot.hasError) {
           return const Center(child: Text("Ma'lumotlarni yuklashda xatolik"));
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return const Card(
             child: Padding(
               padding: EdgeInsets.all(16.0),
@@ -252,21 +252,20 @@ class _MainScreenState extends State<MainScreen> {
             ),
           );
         }
-        final recentSales = snapshot.data!.docs;
+        final recentSales = snapshot.data!;
         return Card(
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: recentSales.length,
             itemBuilder: (context, index) {
-              final sale = recentSales[index].data() as Map<String, dynamic>;
-              final items = sale['items'] as List? ?? [];
+              final sale = recentSales[index];
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.shopping_bag)),
-                title: Text('Chek #${sale['saleId'] ?? 'N/A'}'),
-                subtitle: Text('${items.length} ta mahsulot'),
+                title: Text('Chek #${sale.saleId ?? 'N/A'}'),
+                subtitle: Text('${sale.items.length} ta mahsulot'),
                 trailing: Text(
-                  formatCurrency(sale['totalAmount'] as num? ?? 0),
+                  formatCurrency(sale.totalAmount),
                   style: const TextStyle(
                       fontWeight: FontWeight.bold, color: Colors.green),
                 ),
@@ -377,10 +376,8 @@ class ActionCard extends StatelessWidget {
 }
 
 // --- FORMATLANISH UCHUN FUNKSIYA ---
-// Pul summasini formatlash uchun. O'zingizga mos qilib o'zgartiring.
-// Masalan: 1200000 -> 1 200 000 so'm kabi ko'rsatish uchun.
 String formatCurrency(num amount) {
-  // Oddiy usulda minglik ajratish
-  return amount.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ');
+  // `intl` paketidan foydalanib, professional formatlash
+  return NumberFormat.currency(locale: 'uz_UZ', symbol: '', decimalDigits: 0)
+      .format(amount);
 }

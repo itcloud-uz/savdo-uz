@@ -1,49 +1,49 @@
 name: savdo_uz
-description: A new Flutter project.
+description: A modern POS and inventory management Flutter application.
 publish_to: 'none'
-
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: '>=3.2.3 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
 
   # Firebase
-  firebase_core: ^2.31.0
-  firebase_auth: ^4.19.5
-  cloud_firestore: ^4.17.3
-  firebase_storage: ^11.7.5
+  firebase_core: ^2.27.0
+  firebase_auth: ^4.17.8
+  cloud_firestore: ^4.15.8
+  firebase_storage: ^11.7.7
+  
+  # State Management
+  provider: ^6.1.2
 
-  # UI va foydali paketlar
-  cupertino_icons: ^1.0.8
+  # Machine Learning (Face Recognition)
+  camera: ^0.10.5+9
+  google_mlkit_face_detection: ^0.11.0
+  tflite_flutter: ^0.10.4
+  image: ^4.1.7
+
+  # UI & Utility
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.2.1
+  mobile_scanner: ^5.1.1 # <-- YANGI SKANER
   intl: ^0.19.0
+  fl_chart: ^0.67.0
+  path_provider: ^2.1.2
+  image_picker: ^1.1.2
+  pdf: ^3.11.0
+  printing: ^5.12.0
   cached_network_image: ^3.3.1
   qr_flutter: ^4.1.0
-  fl_chart: ^0.68.0
-
-  # Qurilma imkoniyatlari
-  image_picker: ^1.1.2
-  camera: ^0.11.0+1
-  mobile_scanner: ^5.1.1
-
-  # Machine Learning
-  google_mlkit_face_detection: ^0.11.0
-  image: ^4.1.7 
-  tflite_flutter: ^0.10.4
-
-  # Hujjatlar va hisobot
-  pdf: ^3.10.8
-  printing: ^5.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/ml/
+    - assets/ml/mobile_face_net.tflite

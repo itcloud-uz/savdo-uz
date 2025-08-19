@@ -1,19 +1,19 @@
-// lib/core/theme/app_colors.dart
+// Ilova uchun ranglar palitrasi.
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF4A90E2); // Asosiy rang (ko'k)
-  static const Color primaryDark = Color(0xFF357ABD);
-  static const Color accent = Color(0xFF50E3C2); // Qo'shimcha rang (yashil)
+  static const primary = Color(0xFF007BFF);
+  static const secondary = Color(0xFF6C757D);
+  static const success = Color(0xFF28A745);
+  static const danger = Color(0xFFDC3545);
+  static const warning = Color(0xFFFFC107);
+  static const info = Color(0xFF17A2B8);
 
-  static const Color background = Color(0xFFF0F2F5); // Orqa fon
-  static const Color card = Colors.white; // Kartochkalar rangi
-  static const Color textPrimary = Color(0xFF333333); // Asosiy matn rangi
-  static const Color textSecondary = Color(0xFF7A7A7A); // Ikkilamchi matn rangi
-  static const Color error = Color(0xFFD0021B); // Xatolik rangi
-  static const Color success = Color(0xFF7ED321); // Muvaffaqiyat rangi
+  // Fon ranglari
+  static const lightBg = Color(0xFFF8F9FA);
+  static const darkBg = Color(0xFF212529);
 
-  static const Color transparent = Colors.transparent;
-  static const Color black = Colors.black;
-  static const Color white = Colors.white;
+  // Matn ranglari
+  static const lightText = Color(0xFF212529);
+  static const darkText = Color(0xFFF8F9FA);
 }

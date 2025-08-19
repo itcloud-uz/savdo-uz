@@ -2,82 +2,141 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
+import 'package:savdo_uz/models/customer_model.dart';
+import 'package:savdo_uz/models/employee_model.dart';
+import 'package:savdo_uz/models/product_model.dart';
+import 'package:savdo_uz/models/sale_model.dart';
+import 'package:savdo_uz/models/debt_model.dart';
+import 'package:savdo_uz/models/expense_model.dart';
+import 'package:savdo_uz/models/attendance_log_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
 
-  // --- SOTUVLAR (SALES) BO'LIMI ---
-  Stream<QuerySnapshot> getSalesForToday() {
+  // --- MAHSULOTLAR (PRODUCTS) ---
+  Stream<List<Product>> getProducts() {
+    return _db.collection('products').orderBy('name').snapshots().map(
+        (snapshot) =>
+            snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList());
+  }
+
+  Future<Product?> getProductByBarcode(String barcode) async {
+    final snapshot = await _db
+        .collection('products')
+        .where('barcode', isEqualTo: barcode)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isNotEmpty) {
+      return Product.fromFirestore(snapshot.docs.first);
+    }
+    return null;
+  }
+
+  Future<void> addProduct(Product product) {
+    return _db.collection('products').add(product.toFirestore());
+  }
+
+  Future<void> updateProduct(Product product) {
+    return _db
+        .collection('products')
+        .doc(product.id)
+        .update(product.toFirestore());
+  }
+
+  Future<void> deleteProduct(String productId) {
+    return _db.collection('products').doc(productId).delete();
+  }
+
+  // --- SOTUVLAR (SALES) ---
+  Future<void> addSale(Sale sale) async {
+    return _db.runTransaction((transaction) async {
+      final saleRef = _db.collection('sales').doc();
+      transaction.set(saleRef, sale.toFirestore());
+
+      if (sale.paymentType == 'debt' && sale.customerId != null) {
+        final customerRef = _db.collection('customers').doc(sale.customerId!);
+        transaction.update(
+            customerRef, {'debt': FieldValue.increment(sale.totalAmount)});
+      }
+
+      for (var item in sale.items) {
+        final productRef = _db.collection('products').doc(item.product.id!);
+        transaction.update(
+            productRef, {'quantity': FieldValue.increment(-item.quantity)});
+      }
+    });
+  }
+
+  Stream<List<Sale>> getSalesForToday() {
     DateTime now = DateTime.now();
     DateTime startOfDay = DateTime(now.year, now.month, now.day);
-    DateTime endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    DateTime endOfDay = startOfDay.add(const Duration(days: 1));
+
     return _db
         .collection('sales')
         .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
-        .where('timestamp', isLessThanOrEqualTo: endOfDay)
+        .where('timestamp', isLessThan: endOfDay)
         .orderBy('timestamp', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Sale.fromFirestore(doc)).toList());
   }
 
-  Stream<QuerySnapshot> getRecentSales({int limit = 3}) {
+  Stream<List<Sale>> getRecentSales({int limit = 5}) {
     return _db
         .collection('sales')
         .orderBy('timestamp', descending: true)
         .limit(limit)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Sale.fromFirestore(doc)).toList());
   }
 
-  Future<List<QueryDocumentSnapshot>> getSalesBetweenDates(
+  Future<List<Sale>> getSalesBetweenDates(
       DateTime startDate, DateTime endDate) async {
     DateTime start = DateTime(startDate.year, startDate.month, startDate.day);
     DateTime end =
         DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59);
+
     final snapshot = await _db
         .collection('sales')
         .where('timestamp', isGreaterThanOrEqualTo: start)
         .where('timestamp', isLessThanOrEqualTo: end)
         .orderBy('timestamp', descending: true)
         .get();
-    return snapshot.docs;
+
+    return snapshot.docs.map((doc) => Sale.fromFirestore(doc)).toList();
   }
 
-  // --- MAHSULOTLAR (PRODUCTS) BO'LIMI ---
-  Future<DocumentSnapshot?> getProductByBarcode(String barcode) async {
-    final querySnapshot = await _db
-        .collection('products')
-        .where('barcode', isEqualTo: barcode)
-        .limit(1)
-        .get();
-    if (querySnapshot.docs.isNotEmpty) {
-      return querySnapshot.docs.first;
-    }
-    return null;
+  // --- MIJOZLAR (CUSTOMERS) ---
+  Stream<List<Customer>> getCustomers() {
+    return _db.collection('customers').orderBy('name').snapshots().map(
+        (snapshot) =>
+            snapshot.docs.map((doc) => Customer.fromFirestore(doc)).toList());
   }
 
-  // --- MIJOZLAR (CUSTOMERS) BO'LIMI ---
-  Stream<QuerySnapshot> getCustomers() {
-    return _db.collection('customers').orderBy('name').snapshots();
+  Future<void> addCustomer(Customer customer) {
+    return _db.collection('customers').add(customer.toFirestore());
   }
 
-  Future<void> addCustomer(Map<String, dynamic> customerData) {
-    return _db.collection('customers').add(customerData);
-  }
-
-  Future<void> updateCustomer(
-      String customerId, Map<String, dynamic> customerData) {
-    return _db.collection('customers').doc(customerId).update(customerData);
+  Future<void> updateCustomer(Customer customer) {
+    return _db
+        .collection('customers')
+        .doc(customer.id)
+        .update(customer.toFirestore());
   }
 
   Future<void> deleteCustomer(String customerId) {
     return _db.collection('customers').doc(customerId).delete();
   }
 
-  // --- XODIMLAR (EMPLOYEES) BO'LIMI ---
-  Stream<QuerySnapshot> getEmployees() {
-    return _db.collection('users').orderBy('fullName').snapshots();
+  // --- XODIMLAR (EMPLOYEES) ---
+  Stream<List<Employee>> getEmployees() {
+    return _db.collection('employees').orderBy('name').snapshots().map(
+        (snapshot) =>
+            snapshot.docs.map((doc) => Employee.fromFirestore(doc)).toList());
   }
 
   Future<XFile?> pickImage() async {
@@ -86,109 +145,91 @@ class FirestoreService {
   }
 
   Future<String> uploadEmployeeImage(File imageFile) async {
-    try {
-      String fileName =
-          'employee_photos/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = _storage.ref().child(fileName);
-      UploadTask uploadTask = ref.putFile(imageFile);
-      TaskSnapshot snapshot = await uploadTask;
-      return await snapshot.ref.getDownloadURL();
-    } catch (e) {
-      rethrow;
-    }
+    String fileName =
+        'employee_photos/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    Reference ref = _storage.ref().child(fileName);
+    UploadTask uploadTask = ref.putFile(imageFile);
+    TaskSnapshot snapshot = await uploadTask;
+    return await snapshot.ref.getDownloadURL();
   }
 
-  Future<DocumentReference> addEmployee(Map<String, dynamic> employeeData) {
-    employeeData['createdAt'] = Timestamp.now();
-    return _db.collection('users').add(employeeData);
+  Future<void> addEmployee(Employee employee) {
+    return _db.collection('employees').add(employee.toFirestore());
   }
 
-  Future<void> updateEmployee(
-      String employeeId, Map<String, dynamic> employeeData) {
-    return _db.collection('users').doc(employeeId).update(employeeData);
+  Future<void> updateEmployee(Employee employee) {
+    return _db
+        .collection('employees')
+        .doc(employee.id)
+        .update(employee.toFirestore());
   }
 
-  Future<void> deleteEmployee(String employeeId, {String? imageUrl}) async {
-    if (imageUrl != null && imageUrl.isNotEmpty) {
+  Future<void> deleteEmployee(Employee employee) async {
+    if (employee.imageUrl != null && employee.imageUrl!.isNotEmpty) {
       try {
-        await _storage.refFromURL(imageUrl).delete();
+        await _storage.refFromURL(employee.imageUrl!).delete();
       } catch (e) {
         print("Rasmni o'chirishda xatolik: $e");
       }
     }
-    await _db.collection('users').doc(employeeId).delete();
+    await _db.collection('employees').doc(employee.id).delete();
   }
 
-  // --- DAVOMAT (ATTENDANCE) BO'LIMI ---
-  Future<List<QueryDocumentSnapshot>> getEmployeeFaceData() async {
+  Future<List<Employee>> getEmployeesWithFaceData() async {
     final snapshot = await _db
-        .collection('users')
+        .collection('employees')
         .where('faceEmbedding', isNotEqualTo: null)
         .get();
-    return snapshot.docs;
+    return snapshot.docs.map((doc) => Employee.fromFirestore(doc)).toList();
   }
 
-  Future<void> logAttendance(
-      String employeeId, String employeeName, String status) async {
-    await _db.collection('attendance_logs').add({
-      'employeeId': employeeId,
-      'employeeName': employeeName,
-      'timestamp': Timestamp.now(),
-      'status': status
-    });
+  // --- DAVOMAT (ATTENDANCE) ---
+  Future<void> logAttendance(AttendanceLog log) async {
+    await _db.collection('attendance_logs').add(log.toFirestore());
   }
 
-  Stream<QuerySnapshot> getAttendanceRecords() {
+  Stream<List<AttendanceLog>> getAttendanceRecords() {
     return _db
         .collection('attendance_logs')
         .orderBy('timestamp', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => AttendanceLog.fromFirestore(doc))
+            .toList());
   }
 
-  /// Xodimning bugungi oxirgi davomat yozuvini tekshiradi. (YANGI FUNKSIYA)
-  Future<DocumentSnapshot?> getLastAttendanceLogForToday(
-      String employeeId) async {
+  Future<AttendanceLog?> getLastAttendanceLogForToday(String employeeId) async {
     DateTime now = DateTime.now();
     DateTime startOfDay = DateTime(now.year, now.month, now.day);
-    DateTime endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    DateTime endOfDay = startOfDay.add(const Duration(days: 1));
+
     final snapshot = await _db
         .collection('attendance_logs')
         .where('employeeId', isEqualTo: employeeId)
         .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
-        .where('timestamp', isLessThanOrEqualTo: endOfDay)
+        .where('timestamp', isLessThan: endOfDay)
         .orderBy('timestamp', descending: true)
         .limit(1)
         .get();
+
     if (snapshot.docs.isNotEmpty) {
-      return snapshot.docs.first;
+      return AttendanceLog.fromFirestore(snapshot.docs.first);
     }
     return null;
   }
 
-  // --- QARZ DAFTARI (DEBT LEDGER) BO'LIMI ---
-  Stream<QuerySnapshot> getDebts() {
+  // --- QARZ DAFTARI (DEBT LEDGER) ---
+  Stream<List<Debt>> getDebts() {
     return _db
         .collection('debts')
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Debt.fromFirestore(doc)).toList());
   }
 
-  Future<void> addDebt(
-      {required String customerId,
-      required String customerName,
-      required double amount,
-      String? comment}) {
-    return _db.collection('debts').add({
-      'customerId': customerId,
-      'customerName': customerName,
-      'initialAmount': amount,
-      'remainingAmount': amount,
-      'createdAt': Timestamp.now(),
-      'lastUpdatedAt': Timestamp.now(),
-      'isPaid': false,
-      'payments': [],
-      'comment': comment
-    });
+  Future<void> addDebt(Debt debt) {
+    return _db.collection('debts').add(debt.toFirestore());
   }
 
   Future<void> addPaymentToDebt(
@@ -197,46 +238,46 @@ class FirestoreService {
     return _db.runTransaction((transaction) async {
       final snapshot = await transaction.get(debtRef);
       if (!snapshot.exists) throw Exception("Qarz topilmadi!");
-      final data = snapshot.data() as Map<String, dynamic>;
-      final double remainingAmount =
-          (data['remainingAmount'] ?? 0.0).toDouble();
-      final double newRemainingAmount = remainingAmount - paymentAmount;
-      final newPayment = {'amount': paymentAmount, 'paidAt': Timestamp.now()};
+
+      Debt debt = Debt.fromFirestore(snapshot);
+      double newRemainingAmount = debt.remainingAmount - paymentAmount;
+      final newPayment = Payment(amount: paymentAmount, paidAt: DateTime.now());
+
+      List<Map<String, dynamic>> paymentsMap =
+          debt.payments.map((p) => p.toMap()).toList();
+      paymentsMap.add(newPayment.toMap());
+
       transaction.update(debtRef, {
         'remainingAmount': newRemainingAmount,
         'isPaid': newRemainingAmount <= 0,
         'lastUpdatedAt': Timestamp.now(),
-        'payments': FieldValue.arrayUnion([newPayment])
+        'payments': paymentsMap,
       });
     });
   }
 
-  // --- XARAJATLAR (EXPENSES) BO'LIMI ---
-  Stream<QuerySnapshot> getExpenses() {
+  // --- XARAJATLAR (EXPENSES) ---
+  Stream<List<Expense>> getExpenses() {
     return _db
         .collection('expenses')
         .orderBy('expenseDate', descending: true)
-        .snapshots();
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Expense.fromFirestore(doc)).toList());
   }
 
-  Future<void> addExpense(
-      {required String category,
-      required double amount,
-      required DateTime expenseDate,
-      String? description}) {
-    return _db.collection('expenses').add({
-      'category': category,
-      'amount': amount,
-      'expenseDate': Timestamp.fromDate(expenseDate),
-      'description': description,
-      'createdAt': Timestamp.now()
-    });
+  Future<void> addExpense(Expense expense) {
+    return _db.collection('expenses').add(expense.toFirestore());
   }
-}
 
-// --- YORDAMCHI FUNKSIYALAR ---
-String formatCurrency(num amount) {
-  final format =
-      NumberFormat.currency(locale: 'uz_UZ', symbol: "so'm", decimalDigits: 0);
-  return format.format(amount);
+  Future<void> updateExpense(Expense expense) {
+    return _db
+        .collection('expenses')
+        .doc(expense.id)
+        .update(expense.toFirestore());
+  }
+
+  Future<void> deleteExpense(String expenseId) {
+    return _db.collection('expenses').doc(expenseId).delete();
+  }
 }

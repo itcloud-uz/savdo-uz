@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:savdo_uz/main_screen.dart';
-import 'package:savdo_uz/face_scan_screen.dart';
+import 'package:savdo_uz/screens/home/main_screen.dart';
+import 'package:savdo_uz/screens/scan/face_scan_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});

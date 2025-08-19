@@ -1,126 +1,82 @@
+// Yorug' va qorong'u mavzular (themes).
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
-import 'app_text_styles.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
-    final base = ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: AppColors.primary,
-        primary: AppColors.primary,
-        secondary: AppColors.accent,
-        surface: AppColors.card,
-        background: AppColors.background,
-        error: AppColors.error,
-        brightness: Brightness.light,
-      ),
-      fontFamily: 'Inter',
-    );
-
-    return base.copyWith(
-      scaffoldBackgroundColor: AppColors.background,
-
-      textTheme: base.textTheme
-          .copyWith(
-            displayLarge: AppTextStyles.headline1,
-            displayMedium: AppTextStyles.headline2,
-            displaySmall: AppTextStyles.headline3,
-            bodyLarge: AppTextStyles.bodyText1,
-            bodyMedium: AppTextStyles.bodyText2,
-            labelLarge: AppTextStyles.button,
-          )
-          .apply(
-            displayColor: AppColors.textPrimary,
-            bodyColor: AppColors.textPrimary,
-          ),
-
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.card,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0.5,
-        centerTitle: true,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
-        titleTextStyle: TextStyle(
+  static final ThemeData lightTheme = ThemeData(
+    brightness: Brightness.light,
+    primaryColor: AppColors.primary,
+    scaffoldBackgroundColor: AppColors.lightBg,
+    textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme)
+        .apply(bodyColor: AppColors.lightText),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.lightBg,
+      elevation: 0.5,
+      iconTheme: IconThemeData(color: AppColors.lightText),
+      titleTextStyle: TextStyle(
+          color: AppColors.lightText,
           fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
-      ),
-
-      // ✅ CardTheme to‘g‘ri yozilgan
-      cardTheme: base.cardTheme.copyWith(
-        elevation: 1,
-        color: AppColors.card,
-        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(
-            color: Color(0xFFE0E0E0),
-            width: 0.5,
-          ),
-        ),
-      ),
-
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: AppTextStyles.button,
-        ),
-      ),
-
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: AppColors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
-        ),
-        labelStyle: AppTextStyles.bodyText2,
-        hintStyle: AppTextStyles.bodyText2.copyWith(color: Colors.grey),
-      ),
-
-      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          fontWeight: FontWeight.w600),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
+    ),
+    cardTheme: CardThemeData(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.white,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      filled: true,
+      fillColor: Colors.white,
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.secondary,
+    ),
+  );
 
-      // ✅ DialogTheme to‘g‘ri yozilgan
-      dialogTheme: base.dialogTheme.copyWith(
-        backgroundColor: AppColors.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+  static final ThemeData darkTheme = ThemeData(
+    brightness: Brightness.dark,
+    primaryColor: AppColors.primary,
+    scaffoldBackgroundColor: AppColors.darkBg,
+    textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme)
+        .apply(bodyColor: AppColors.darkText),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: AppColors.darkBg,
+      elevation: 0.5,
+      iconTheme: IconThemeData(color: AppColors.darkText),
+      titleTextStyle: TextStyle(
+          color: AppColors.darkText, fontSize: 18, fontWeight: FontWeight.w600),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
-
-      dividerTheme: const DividerThemeData(
-        color: Color(0xFFE0E0E0),
-        thickness: 1,
-      ),
-
-      snackBarTheme: SnackBarThemeData(
-        backgroundColor: AppColors.primary.withOpacity(0.9),
-        contentTextStyle: AppTextStyles.bodyText2.copyWith(color: Colors.white),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
+    ),
+    cardTheme: CardThemeData(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: const Color(0xFF2b3035),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      filled: true,
+      fillColor: const Color(0xFF2b3035),
+    ),
+    bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.secondary,
+    ),
+  );
 }
