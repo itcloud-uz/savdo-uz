@@ -8,53 +8,76 @@ class BarcodeScannerScreen extends StatefulWidget {
   State<BarcodeScannerScreen> createState() => _BarcodeScannerScreenState();
 }
 
-class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
-  final MobileScannerController _scannerController = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-  );
+class _BarcodeScannerScreenState extends State<BarcodeScannerScreen>
+    with WidgetsBindingObserver {
+  late final MobileScannerController _scannerController;
 
   bool _isScanCompleted = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
+    _scannerController = MobileScannerController(
+      detectionSpeed: DetectionSpeed.normal,
+      facing: CameraFacing.back,
+      torchEnabled: false, // Torch dastlab o‘chiq
+      autoStart: true, // Ruxsat, on-start avtomatik yoqiladi
+    );
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scannerController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final hasPerm = _scannerController.value.hasCameraPermission;
+    if (!hasPerm) return;
+
+    if (state == AppLifecycleState.resumed) {
+      _scannerController.start();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _scannerController.stop();
+    }
   }
 
   void _handleBarcodeDetection(BarcodeCapture capture) {
     if (!_isScanCompleted && capture.barcodes.isNotEmpty) {
       final String? code = capture.barcodes.first.rawValue;
       if (code != null) {
-        setState(() {
-          _isScanCompleted = true;
-        });
+        setState(() => _isScanCompleted = true);
         Navigator.pop(context, code);
       }
     }
   }
 
+  void _toggleTorch() {
+    _scannerController.toggleTorch();
+    setState(() {}); // Qiymatni yangilash uchun
+  }
+
   @override
   Widget build(BuildContext context) {
+    final torch = _scannerController.value.torchState;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Shtrix-kodni skanerlang'),
+        title: const Text('Shtrix‑kodi skanerlang'),
         actions: [
-          // 🔦 Chiroq (torch) tugmasi
-          ValueListenableBuilder<TorchState>(
-            valueListenable: _scannerController.torchState,
-            builder: (context, state, child) {
-              return IconButton(
-                icon: Icon(
-                  state == TorchState.on ? Icons.flash_on : Icons.flash_off,
-                  color: state == TorchState.on ? Colors.yellow : Colors.grey,
-                ),
-                onPressed: () => _scannerController.toggleTorch(),
-                tooltip: 'Chiroq',
-              );
-            },
+          IconButton(
+            icon: Icon(
+              torch == TorchState.on ? Icons.flash_on : Icons.flash_off,
+              color: torch == TorchState.on ? Colors.yellow : Colors.grey,
+            ),
+            onPressed: _toggleTorch,
+            tooltip: 'Chiroq',
           ),
-          // 📷 Kamera almashtirish tugmasi
           IconButton(
             icon: const Icon(Icons.flip_camera_ios),
             onPressed: () => _scannerController.switchCamera(),
@@ -68,7 +91,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             controller: _scannerController,
             onDetect: _handleBarcodeDetection,
           ),
-          // 📦 Skanner ramkasi
           Center(
             child: Container(
               width: MediaQuery.of(context).size.width * 0.8,
