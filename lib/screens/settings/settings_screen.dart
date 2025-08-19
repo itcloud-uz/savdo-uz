@@ -8,8 +8,6 @@ import 'package:savdo_uz/screens/settings/company_info_screen.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
-  // ... (_showThemeDialog metodi o'zgarishsiz qoladi) ...
-
   @override
   Widget build(BuildContext context) {
     final authProvider = context.read<AuthProvider>();
