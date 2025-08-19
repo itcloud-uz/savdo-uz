@@ -13,6 +13,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     detectionSpeed: DetectionSpeed.normal,
     facing: CameraFacing.back,
   );
+
   bool _isScanCompleted = false;
 
   @override
@@ -21,55 +22,64 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     super.dispose();
   }
 
+  void _handleBarcodeDetection(BarcodeCapture capture) {
+    if (!_isScanCompleted && capture.barcodes.isNotEmpty) {
+      final String? code = capture.barcodes.first.rawValue;
+      if (code != null) {
+        setState(() {
+          _isScanCompleted = true;
+        });
+        Navigator.pop(context, code);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shtrix-kodni skanerlang'),
         actions: [
-          // Chiroqni yoqish/o'chirish tugmasi
-          IconButton(
-            icon: ValueListenableBuilder<TorchState>(
-              valueListenable: _scannerController.torchState,
-              builder: (context, state, child) {
-                // XATOLIK TUZATILDI: `switch` barcha holatlarni qamrab oladi
-                switch (state) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.grey);
-                  case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.yellow);
-                  default: // Boshqa holatlar uchun (masalan, chiroq yo'q bo'lsa)
-                    return const Icon(Icons.flash_off, color: Colors.grey);
-                }
-              },
-            ),
-            onPressed: () => _scannerController.toggleTorch(),
+          // 🔦 Chiroq (torch) tugmasi
+          ValueListenableBuilder<TorchState>(
+            valueListenable: _scannerController.torchState,
+            builder: (context, state, child) {
+              return IconButton(
+                icon: Icon(
+                  state == TorchState.on ? Icons.flash_on : Icons.flash_off,
+                  color: state == TorchState.on ? Colors.yellow : Colors.grey,
+                ),
+                onPressed: () => _scannerController.toggleTorch(),
+                tooltip: 'Chiroq',
+              );
+            },
           ),
-          // Kamera almashtirish tugmasi
+          // 📷 Kamera almashtirish tugmasi
           IconButton(
             icon: const Icon(Icons.flip_camera_ios),
             onPressed: () => _scannerController.switchCamera(),
+            tooltip: 'Kamera',
           ),
         ],
       ),
-      body: MobileScanner(
-        controller: _scannerController,
-        onDetect: (capture) {
-          // Xatolikni oldini olish uchun faqat bir marta natija qaytaramiz
-          if (!_isScanCompleted) {
-            final List<Barcode> barcodes = capture.barcodes;
-            if (barcodes.isNotEmpty) {
-              final String? code = barcodes.first.rawValue;
-              if (code != null) {
-                setState(() {
-                  _isScanCompleted = true;
-                });
-                // Skanerlangan kodni avvalgi sahifaga qaytaramiz
-                Navigator.pop(context, code);
-              }
-            }
-          }
-        },
+      body: Stack(
+        children: [
+          MobileScanner(
+            controller: _scannerController,
+            onDetect: _handleBarcodeDetection,
+          ),
+          // 📦 Skanner ramkasi
+          Center(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: 250,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.green, width: 4),
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

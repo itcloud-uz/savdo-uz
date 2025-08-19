@@ -1,22 +1,39 @@
-import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:savdo_uz/core/theme/app_theme.dart';
+import 'package:savdo_uz/app.dart';
+import 'package:savdo_uz/firebase_options.dart';
 import 'package:savdo_uz/providers/auth_provider.dart';
 import 'package:savdo_uz/providers/cart_provider.dart';
 import 'package:savdo_uz/providers/theme_provider.dart';
-import 'package:savdo_uz/screens/auth/login_screen.dart';
-import 'package:savdo_uz/screens/home/main_screen.dart';
 import 'package:savdo_uz/services/auth_service.dart';
-import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/services/face_recognition_service.dart';
-import 'firebase_options.dart';
+import 'package:savdo_uz/services/firestore_service.dart';
 
-void main() async {
+/// Qurilma kameralarini global saqlash
+List<CameraDescription> cameras = [];
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  try {
+    cameras = await availableCameras();
+  } catch (e, stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: e,
+        stack: stack,
+        library: 'camera',
+        context: ErrorDescription('Kamerani initsializatsiya qilishda xatolik'),
+      ),
+    );
+  }
+
   runApp(const MyApp());
 }
 
@@ -27,56 +44,33 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Servislar
-        Provider<FirestoreService>(create: (_) => FirestoreService()),
+        /// Servislar
         Provider<AuthService>(create: (_) => AuthService()),
-        Provider<FaceRecognitionService>(
-            create: (context) => FaceRecognitionService(context)),
+        Provider<FirestoreService>(create: (_) => FirestoreService()),
 
-        // Holat boshqaruvchilari (ChangeNotifiers)
-        ChangeNotifierProvider<AuthProvider>(
-          create: (context) => AuthProvider(context.read<AuthService>()),
+        /// FaceRecognitionService FirestoreService’ga bog‘liq
+        Provider<FaceRecognitionService>(
+          create: (context) => FaceRecognitionService(
+            Provider.of<FirestoreService>(context, listen: false),
+          ),
+          dispose: (_, service) => service.dispose(),
+        ),
+
+        /// State management providerlar
+        ChangeNotifierProvider<ThemeProvider>(
+          create: (_) => ThemeProvider(),
+        ),
+        ChangeNotifierProxyProvider<AuthService, AuthProvider>(
+          create: (context) => AuthProvider(
+            Provider.of<AuthService>(context, listen: false),
+          ),
+          update: (context, authService, previous) => AuthProvider(authService),
         ),
         ChangeNotifierProvider<CartProvider>(
           create: (_) => CartProvider(),
         ),
-        ChangeNotifierProvider<ThemeProvider>(
-          create: (_) => ThemeProvider(),
-        ),
       ],
-      // Consumer yordamida ilova mavzusini kuzatib boramiz
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'Savdo-UZ',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.themeMode, // Mavzuni provayderdan olamiz
-            debugShowCheckedModeBanner: false,
-            home: const AuthWrapper(),
-          );
-        },
-      ),
+      child: const App(),
     );
-  }
-}
-
-// Foydalanuvchi tizimga kirgan yoki kirmaganligini tekshiruvchi alohida vidjet
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final authStatus = context.watch<AuthProvider>().status;
-
-    // Foydalanuvchi holatiga qarab kerakli ekranni ko'rsatish
-    switch (authStatus) {
-      case AuthStatus.authenticated:
-        return const MainScreen();
-      case AuthStatus.unauthenticated:
-      case AuthStatus.authenticating:
-      default:
-        return const LoginScreen();
-    }
   }
 }

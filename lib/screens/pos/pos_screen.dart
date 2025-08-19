@@ -12,18 +12,29 @@ class POSScreen extends StatelessWidget {
   Future<void> _scanBarcode(BuildContext context) async {
     try {
       String barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
-          '#ff6666', 'Bekor qilish', true, ScanMode.BARCODE);
+        '#ff6666',
+        'Bekor qilish',
+        true,
+        ScanMode.BARCODE,
+      );
 
-      if (barcodeScanRes != '-1' && context.mounted) {
+      if (barcodeScanRes != '-1') {
+        if (!context.mounted) return; // ✅ context tekshiruvi qo‘shildi
+
         final firestoreService = context.read<FirestoreService>();
         final product =
             await firestoreService.getProductByBarcode(barcodeScanRes);
+
+        if (!context.mounted) return; // ✅ yana tekshiruvi
+
         if (product != null) {
           if (product.quantity > 0) {
             context.read<CartProvider>().addItem(product);
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ushbu mahsulot omborda qolmagan.')),
+              const SnackBar(
+                content: Text('Ushbu mahsulot omborda qolmagan.'),
+              ),
             );
           }
         } else {
@@ -33,6 +44,7 @@ class POSScreen extends StatelessWidget {
         }
       }
     } catch (e) {
+      if (!context.mounted) return; // ✅ xatolikda ham tekshirildi
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Skanerlashda xatolik: $e')),
       );
@@ -68,8 +80,10 @@ class POSScreen extends StatelessWidget {
             child: cart.items.isEmpty
                 ? const Center(
                     child: Text(
-                        'Savat bo\'sh.\nMahsulot qo\'shish uchun skanerlang.',
-                        textAlign: TextAlign.center))
+                      'Savat bo\'sh.\nMahsulot qo\'shish uchun skanerlang.',
+                      textAlign: TextAlign.center,
+                    ),
+                  )
                 : ListView.builder(
                     itemCount: cart.items.length,
                     itemBuilder: (ctx, i) {
@@ -105,9 +119,11 @@ class POSScreen extends StatelessWidget {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              spreadRadius: 0,
-              blurRadius: 10)
+            color: Colors.black
+                .withValues(alpha: 0.1), // ✅ withOpacity → withValues
+            spreadRadius: 0,
+            blurRadius: 10,
+          ),
         ],
       ),
       child: Column(
@@ -133,7 +149,8 @@ class POSScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const CheckoutScreen()),
+                    builder: (context) => const CheckoutScreen(),
+                  ),
                 );
               },
               child: const Text('To\'lov'),

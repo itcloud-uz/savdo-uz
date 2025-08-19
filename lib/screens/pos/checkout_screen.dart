@@ -35,8 +35,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       final newSale = Sale(
-        saleId:
-            '${DateTime.now().millisecondsSinceEpoch}', // Vaqtinchalik noyob ID
+        saleId: '${DateTime.now().millisecondsSinceEpoch}', // noyob ID
         totalAmount: cart.totalPrice,
         timestamp: DateTime.now(),
         items: cart.items,
@@ -48,9 +47,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       await firestoreService.addSale(newSale);
 
       if (mounted) {
-        // Savatni tozalash
         cart.clearCart();
-        // Chek ekraniga o'tish va orqadagi barcha ekranlarni yopish
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => ReceiptScreen(sale: newSale)),
           (route) => route.isFirst,
@@ -107,29 +104,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ),
             const SizedBox(height: 24),
             // Agar "Qarzga" tanlansa, mijozlar ro'yxati chiqadi
-            if (_paymentType == PaymentType.debt)
+            if (_paymentType == PaymentType.debt) ...[
               StreamBuilder<List<Customer>>(
                 stream: firestoreService.getCustomers(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
                   final customers = snapshot.data!;
                   return DropdownButtonFormField<Customer>(
-                    value: _selectedCustomer,
+                    initialValue:
+                        _selectedCustomer, // 🔥 value o‘rniga initialValue
                     hint: const Text('Mijozni tanlang'),
                     isExpanded: true,
                     items: customers.map((customer) {
                       return DropdownMenuItem(
-                          value: customer, child: Text(customer.name));
+                        value: customer,
+                        child: Text(customer.name),
+                      );
                     }).toList(),
                     onChanged: (value) =>
                         setState(() => _selectedCustomer = value),
                     decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.person)),
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                    ),
                   );
                 },
               ),
+            ],
             const SizedBox(height: 32),
             _isLoading
                 ? const CircularProgressIndicator()

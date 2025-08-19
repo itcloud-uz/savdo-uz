@@ -25,56 +25,72 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
   @override
   void initState() {
     super.initState();
+    // Provider orqali servislarni olish
     _faceRecognitionService = context.read<FaceRecognitionService>();
     _firestoreService = context.read<FirestoreService>();
     _initializeCamera();
   }
 
+  /// Kamerani initsializatsiya qilish va oqimni boshlash
   Future<void> _initializeCamera() async {
-    final cameras = await availableCameras();
-    // Odatda old kamera `cameras[1]` bo'ladi
-    final frontCamera = cameras.firstWhere(
+    try {
+      final cameras = await availableCameras();
+
+      final frontCamera = cameras.firstWhere(
         (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras.first);
+        orElse: () => cameras.first,
+      );
 
-    _cameraController = CameraController(
-      frontCamera,
-      ResolutionPreset.medium,
-      enableAudio: false,
-    );
+      _cameraController = CameraController(
+        frontCamera,
+        ResolutionPreset.medium,
+        enableAudio: false,
+      );
 
-    await _cameraController!.initialize();
+      await _cameraController!.initialize();
 
-    // Yuzlarni tanib olish uchun oqimni boshlash
-    _cameraController!.startImageStream((image) {
-      if (!_isProcessing) {
-        _processImage(image, frontCamera);
-      }
-    });
-
-    if (mounted) {
-      setState(() {
-        _isCameraInitialized = true;
+      _cameraController!.startImageStream((image) {
+        if (!_isProcessing) {
+          _processImage(image, frontCamera);
+        }
       });
+
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _message = "Kamerani ishga tushirib bo'lmadi.";
+        });
+        debugPrint("Kamera initsializatsiyasida xatolik: $e");
+      }
     }
   }
 
+  /// Kamera oqimidagi kadrni qayta ishlash
   Future<void> _processImage(
       CameraImage image, CameraDescription camera) async {
+    if (!mounted) return;
+
     setState(() {
       _isProcessing = true;
     });
 
+    final navigator = Navigator.of(context);
+
     try {
-      final recognizedEmployee =
+      final Employee? recognizedEmployee =
           await _faceRecognitionService.predict(image, camera);
 
       if (recognizedEmployee != null) {
-        // Agar xodim tanilsa, oqimni to'xtatamiz
         await _cameraController?.stopImageStream();
 
         final lastLog = await _firestoreService
             .getLastAttendanceLogForToday(recognizedEmployee.id!);
+
         final status =
             (lastLog == null || lastLog.status == 'ketdi') ? 'keldi' : 'ketdi';
 
@@ -87,27 +103,30 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
 
         await _firestoreService.logAttendance(newLog);
 
+        if (!mounted) return;
         setState(() {
           _message =
               "${recognizedEmployee.name}, muvaffaqiyatli belgilandi (${status.toUpperCase()})!";
         });
 
-        // 2 soniyadan keyin orqaga qaytish
         await Future.delayed(const Duration(seconds: 2));
-        if (mounted) Navigator.pop(context);
+        if (mounted) navigator.pop();
       } else {
-        setState(() {
-          _message = "Yuzingizni kameraga yaqinlashtiring";
-        });
+        if (mounted) {
+          setState(() {
+            _message = "Yuzingizni kameraga yaqinlashtiring";
+          });
+        }
       }
     } catch (e) {
-      print("Yuzni tanishda xatolik: $e");
-      setState(() {
-        _message = "Xatolik yuz berdi";
-      });
+      debugPrint("Yuzni tanishda xatolik: $e");
+      if (mounted) {
+        setState(() {
+          _message = "Xatolik yuz berdi";
+        });
+      }
     } finally {
-      // Qayta ishlashga ruxsat berish
-      await Future.delayed(const Duration(milliseconds: 500)); // Kichik pauza
+      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         setState(() {
           _isProcessing = false;
@@ -118,6 +137,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
 
   @override
   void dispose() {
+    _cameraController?.stopImageStream();
     _cameraController?.dispose();
     super.dispose();
   }
@@ -125,7 +145,19 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isCameraInitialized) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        appBar: AppBar(title: const Text('Davomatni Skanerlash')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(_message),
+            ],
+          ),
+        ),
+      );
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Davomatni Skanerlash')),
@@ -133,7 +165,6 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
         fit: StackFit.expand,
         children: [
           CameraPreview(_cameraController!),
-          // Yuz uchun ramka
           Center(
             child: Container(
               width: 250,
@@ -144,7 +175,6 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
               ),
             ),
           ),
-          // Xabar ko'rsatish uchun
           Positioned(
             bottom: 20,
             left: 20,
@@ -152,7 +182,7 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
+                color: Colors.black54,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

@@ -1,19 +1,19 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:savdo_uz/models/attendance_log_model.dart';
 import 'package:savdo_uz/models/customer_model.dart';
+import 'package:savdo_uz/models/debt_model.dart';
 import 'package:savdo_uz/models/employee_model.dart';
+import 'package:savdo_uz/models/expense_model.dart';
 import 'package:savdo_uz/models/product_model.dart';
 import 'package:savdo_uz/models/sale_model.dart';
-import 'package:savdo_uz/models/debt_model.dart';
-import 'package:savdo_uz/models/expense_model.dart';
-import 'package:savdo_uz/models/attendance_log_model.dart';
 
+/// Firestore va Firebase Storage bilan ishlash uchun mas'ul bo'lgan markaziy servis.
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
-  final ImagePicker _picker = ImagePicker();
 
   // --- MAHSULOTLAR (PRODUCTS) ---
   Stream<List<Product>> getProducts() {
@@ -139,11 +139,6 @@ class FirestoreService {
             snapshot.docs.map((doc) => Employee.fromFirestore(doc)).toList());
   }
 
-  Future<XFile?> pickImage() async {
-    return await _picker.pickImage(
-        source: ImageSource.gallery, imageQuality: 70);
-  }
-
   Future<String> uploadEmployeeImage(File imageFile) async {
     String fileName =
         'employee_photos/${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -164,23 +159,38 @@ class FirestoreService {
         .update(employee.toFirestore());
   }
 
-  Future<void> deleteEmployee(Employee employee) async {
-    if (employee.imageUrl != null && employee.imageUrl!.isNotEmpty) {
-      try {
-        await _storage.refFromURL(employee.imageUrl!).delete();
-      } catch (e) {
-        print("Rasmni o'chirishda xatolik: $e");
+  // XATOLIK TUZATILDI: `deleteEmployee` endi `String employeeId` qabul qiladi.
+  // Bu `add_edit_employee_screen`dagi xatolikni ham tuzatadi.
+  Future<void> deleteEmployee(String employeeId) async {
+    // Avval xodim hujjatini o'qib, rasm URL'ini olamiz.
+    DocumentSnapshot doc =
+        await _db.collection('employees').doc(employeeId).get();
+    if (doc.exists) {
+      final data = doc.data() as Map<String, dynamic>?;
+      final imageUrl = data?['imageUrl'] as String?;
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        try {
+          await _storage.refFromURL(imageUrl).delete();
+        } catch (e) {
+          debugPrint("Rasmni o'chirishda xatolik: $e");
+        }
       }
     }
-    await _db.collection('employees').doc(employee.id).delete();
+    // Hujjatni o'chiramiz.
+    await _db.collection('employees').doc(employeeId).delete();
   }
 
-  Future<List<Employee>> getEmployeesWithFaceData() async {
-    final snapshot = await _db
-        .collection('employees')
-        .where('faceEmbedding', isNotEqualTo: null)
-        .get();
-    return snapshot.docs.map((doc) => Employee.fromFirestore(doc)).toList();
+  // XATOLIK TUZATILDI: `faceEmbedding` o'rniga `faceData` ishlatildi.
+  Future<List<Employee>> getAllEmployeesWithFaceData() async {
+    try {
+      final snapshot = await _db
+          .collection('employees')
+          .where('faceData', isNotEqualTo: []).get();
+      return snapshot.docs.map((doc) => Employee.fromFirestore(doc)).toList();
+    } catch (e) {
+      debugPrint("Yuz ma'lumotli xodimlarni olishda xatolik: $e");
+      return [];
+    }
   }
 
   // --- DAVOMAT (ATTENDANCE) ---
@@ -258,9 +268,10 @@ class FirestoreService {
 
   // --- XARAJATLAR (EXPENSES) ---
   Stream<List<Expense>> getExpenses() {
+    // XATOLIK TUZATILDI: `expenseDate` o'rniga `date` ishlatildi.
     return _db
         .collection('expenses')
-        .orderBy('expenseDate', descending: true)
+        .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Expense.fromFirestore(doc)).toList());

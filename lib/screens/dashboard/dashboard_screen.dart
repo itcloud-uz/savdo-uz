@@ -1,21 +1,19 @@
-import 'package:firebase_auth/firebase_auth.dart'
-    hide AuthProvider; // <-- 'AuthProvider' yashirildi
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/sale_model.dart';
-import 'package:savdo_uz/providers/auth_provider.dart'; // <-- Bizning AuthProvider'imiz
+import 'package:savdo_uz/providers/auth_provider.dart';
 import 'package:savdo_uz/screens/attendance/attendance_screen.dart';
-import 'package:savdo_uz/screens/debt/debt_ledger_screen.dart';
-import 'package:savdo_uz/screens/expenses/expenses_screen.dart';
-import 'package:savdo_uz/screens/pos/pos_screen.dart';
-import 'package:savdo_uz/screens/inventory/inventory_screen.dart';
 import 'package:savdo_uz/screens/customer/customers_screen.dart';
+import 'package:savdo_uz/screens/debt/debt_ledger_screen.dart';
 import 'package:savdo_uz/screens/employee/employees_screen.dart';
+import 'package:savdo_uz/screens/expenses/expenses_screen.dart';
+import 'package:savdo_uz/screens/inventory/inventory_screen.dart';
+import 'package:savdo_uz/screens/pos/pos_screen.dart';
 import 'package:savdo_uz/screens/reports/reports_screen.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 
-// Tezkor amallar uchun model
 class _QuickAction {
   final IconData icon;
   final String label;
@@ -36,7 +34,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // Tezkor amallar ro'yxati
+  // XATOLIK TUZATILDI: Barcha ekranlar `const` bilan to'g'ri yaratildi.
   final List<_QuickAction> _quickActions = [
     const _QuickAction(
         icon: Icons.point_of_sale_outlined,
@@ -74,7 +72,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Servis va Provayderlarni Provider orqali olamiz
     final firestoreService = context.read<FirestoreService>();
     final authProvider = context.read<AuthProvider>();
     final currentUser = authProvider.user;
@@ -119,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildGreetingCard(User? user) {
     return Card(
       elevation: 0,
-      color: Theme.of(context).primaryColor.withValues(0.05),
+      color: Theme.of(context).primaryColor.withAlpha(13),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -135,8 +132,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   Text(
-                    user?.email ??
-                        'Foydalanuvchi', // Bu yerda ?? operatori o'rinli
+                    user?.email ?? 'Foydalanuvchi',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
@@ -199,6 +195,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (snapshot.hasError) {
           return const Center(child: Text("Ma'lumotlarni yuklashda xatolik"));
         }
+
         double totalSales = 0.0;
         int salesCount = 0;
         if (snapshot.hasData && snapshot.data!.isNotEmpty) {
@@ -207,6 +204,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               sales.fold<double>(0.0, (sum, sale) => sum + sale.totalAmount);
           salesCount = sales.length;
         }
+
         return Row(
           children: [
             Expanded(
@@ -252,6 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           );
         }
+
         final recentSales = snapshot.data!;
         return Card(
           child: ListView.separated(
@@ -262,7 +261,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final sale = recentSales[index];
               return ListTile(
                 leading: const CircleAvatar(child: Icon(Icons.shopping_bag)),
-                title: Text('Chek #${sale.saleId}'), // <-- ?? olib tashlandi
+                title: Text('Chek #${sale.saleId}'),
                 subtitle: Text('${sale.items.length} ta mahsulot'),
                 trailing: Text(
                   formatCurrency(sale.totalAmount),
@@ -375,9 +374,8 @@ class ActionCard extends StatelessWidget {
   }
 }
 
-// --- FORMATLANISH UCHUN FUNKSIYA ---
+// --- FORMATLASH UCHUN FUNKSIYA ---
 String formatCurrency(num amount) {
-  // `intl` paketidan foydalanib, professional formatlash
   return NumberFormat.currency(locale: 'uz_UZ', symbol: '', decimalDigits: 0)
       .format(amount);
 }

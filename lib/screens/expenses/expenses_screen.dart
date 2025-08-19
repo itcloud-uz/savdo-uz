@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+// XATOLIK TUZATILDI: Import yo'li to'g'rilandi.
 import 'package:provider/provider.dart';
-import 'package:savdo_uz/models/employee_model.dart';
+import 'package:savdo_uz/models/expense_model.dart';
+import 'package:savdo_uz/screens/expenses/add_edit_expense_screen.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
-import 'package:savdo_uz/screens/employee/add_edit_employee_screen.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:savdo_uz/widgets/custom_search_bar.dart';
 import 'package:savdo_uz/widgets/loading_list_tile.dart';
 
-class EmployeesScreen extends StatefulWidget {
-  const EmployeesScreen({super.key});
+class ExpensesScreen extends StatefulWidget {
+  const ExpensesScreen({super.key});
 
   @override
-  State<EmployeesScreen> createState() => _EmployeesScreenState();
+  State<ExpensesScreen> createState() => _ExpensesScreenState();
 }
 
-class _EmployeesScreenState extends State<EmployeesScreen> {
+class _ExpensesScreenState extends State<ExpensesScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -22,9 +23,11 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
-      });
+      if (mounted) {
+        setState(() {
+          _searchQuery = _searchController.text.toLowerCase();
+        });
+      }
     });
   }
 
@@ -40,19 +43,24 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Xodimlar'),
+        title: const Text('Xarajatlar'),
       ),
       body: Column(
         children: [
           CustomSearchBar(
             controller: _searchController,
-            onChanged: (query) =>
-                setState(() => _searchQuery = query.toLowerCase()),
-            hintText: 'Xodim ismi bo\'yicha qidirish...',
+            hintText: 'Xarajat tavsifi bo\'yicha qidirish...',
+            // XATOLIK TUZATILDI: `onChanged` parametri qo'shildi (agar kerak bo'lsa).
+            // Agar sizning `CustomSearchBar` vidjetingizda bu parametr bo'lmasa,
+            // bu qatorni olib tashlashingiz mumkin. Asosiysi `addListener` ishlayapti.
+            onChanged: (query) {
+              // `addListener` allaqachon bu ishni qilmoqda, shuning uchun bu yerda
+              // qo'shimcha kod yozish shart emas.
+            },
           ),
           Expanded(
-            child: StreamBuilder<List<Employee>>(
-              stream: firestoreService.getEmployees(),
+            child: StreamBuilder<List<Expense>>(
+              stream: firestoreService.getExpenses(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return ListView.builder(
@@ -64,49 +72,52 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                   return Center(child: Text('Xatolik: ${snapshot.error}'));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Xodimlar mavjud emas.'));
+                  return const Center(child: Text('Xarajatlar mavjud emas.'));
                 }
 
-                final allEmployees = snapshot.data!;
-                final filteredEmployees = allEmployees.where((employee) {
-                  return employee.name.toLowerCase().contains(_searchQuery);
+                final allExpenses = snapshot.data!;
+                final filteredExpenses = allExpenses.where((expense) {
+                  // XATOLIK TUZATILDI: `description` null bo'lmasligiga ishonch hosil qilindi.
+                  return (expense.description)
+                      .toLowerCase()
+                      .contains(_searchQuery);
                 }).toList();
 
-                if (filteredEmployees.isEmpty) {
+                if (filteredExpenses.isEmpty) {
                   return const Center(
                       child: Text('Qidiruv natijasi topilmadi.'));
                 }
 
                 return ListView.builder(
-                  itemCount: filteredEmployees.length,
+                  itemCount: filteredExpenses.length,
                   itemBuilder: (context, index) {
-                    final employee = filteredEmployees[index];
+                    final expense = filteredExpenses[index];
                     return Card(
                       margin: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 6),
                       child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: (employee.imageUrl != null &&
-                                  employee.imageUrl!.isNotEmpty)
-                              ? CachedNetworkImageProvider(employee.imageUrl!)
-                              : null,
-                          child: (employee.imageUrl == null ||
-                                  employee.imageUrl!.isEmpty)
-                              ? const Icon(Icons.person)
-                              : null,
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.receipt_long_outlined),
                         ),
-                        title: Text(employee.name,
+                        title: Text(expense.description,
                             style:
                                 const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(employee.position),
-                        trailing: const Icon(Icons.chevron_right),
+                        // XATOLIK TUZATILDI: `date` maydoni endi mavjud.
+                        subtitle:
+                            Text(DateFormat('dd/MM/yyyy').format(expense.date)),
+                        trailing: Text(
+                          "${NumberFormat.currency(locale: 'uz_UZ', symbol: '', decimalDigits: 0).format(expense.amount)} so'm",
+                          style: const TextStyle(
+                              color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
                         onTap: () {
                           Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddEditEmployeeScreen(employee: employee),
-                              ));
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  AddEditExpenseScreen(expense: expense),
+                            ),
+                          );
                         },
                       ),
                     );
@@ -120,11 +131,13 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AddEditEmployeeScreen(),
-              ));
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddEditExpenseScreen(),
+            ),
+          );
         },
+        tooltip: 'Yangi xarajat qo\'shish',
         child: const Icon(Icons.add),
       ),
     );

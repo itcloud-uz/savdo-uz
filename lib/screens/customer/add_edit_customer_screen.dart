@@ -51,26 +51,22 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
           name: _nameController.text.trim(),
           phone: _phoneController.text.trim(),
           address: _addressController.text.trim(),
-          debt: widget.customer?.debt ?? 0.0, // Mavjud qarzni saqlab qolamiz
+          debt: widget.customer?.debt ?? 0.0,
         );
 
         if (widget.customer == null) {
-          // Yangi mijoz qo'shish
           await firestoreService.addCustomer(customer);
         } else {
-          // Mavjud mijozni yangilash
           await firestoreService.updateCustomer(customer);
         }
 
-        if (mounted) {
-          Navigator.pop(context);
-        }
+        if (!mounted) return; // 🔑 async gapdan keyin qo'shildi
+        Navigator.pop(context);
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Xatolik yuz berdi: $e")),
-          );
-        }
+        if (!mounted) return; // 🔑 async gapdan keyin qo'shildi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Xatolik yuz berdi: $e")),
+        );
       } finally {
         if (mounted) {
           setState(() {
@@ -87,18 +83,19 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('O\'chirishni tasdiqlang'),
+        title: const Text("O'chirishni tasdiqlang"),
         content: Text(
-            '${widget.customer!.name} ismli mijozni o\'chirishga ishonchingiz komilmi? Bu amalni orqaga qaytarib bo\'lmaydi.'),
+          '${widget.customer!.name} ismli mijozni o\'chirishga ishonchingiz komilmi? Bu amalni orqaga qaytarib bo\'lmaydi.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Bekor qilish'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('O\'chirish'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("O'chirish"),
           ),
         ],
       ),
@@ -108,18 +105,18 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       setState(() {
         _isLoading = true;
       });
+
       try {
         final firestoreService = context.read<FirestoreService>();
         await firestoreService.deleteCustomer(widget.customer!.id!);
-        if (mounted) {
-          Navigator.pop(context);
-        }
+
+        if (!mounted) return; // 🔑 async gapdan keyin qo'shildi
+        Navigator.pop(context);
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Xatolik yuz berdi: $e")),
-          );
-        }
+        if (!mounted) return; // 🔑 async gapdan keyin qo'shildi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Xatolik yuz berdi: $e")),
+        );
       } finally {
         if (mounted) {
           setState(() {
@@ -135,13 +132,13 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-            widget.customer == null ? 'Yangi Mijoz' : 'Mijozni Tahrirlash'),
+            widget.customer == null ? "Yangi Mijoz" : "Mijozni Tahrirlash"),
         actions: [
           if (widget.customer != null)
             IconButton(
+              tooltip: "Mijozni o'chirish",
               icon: const Icon(Icons.delete_outline),
               onPressed: _isLoading ? null : _deleteCustomer,
-              tooltip: 'Mijozni o\'chirish',
             ),
         ],
       ),
@@ -153,22 +150,22 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
             children: [
               CustomTextField(
                 controller: _nameController,
-                labelText: 'Ism-sharifi',
+                labelText: "Ism-sharifi",
                 validator: (value) =>
-                    value!.trim().isEmpty ? 'Ismni kiriting' : null,
+                    value!.trim().isEmpty ? "Ismni kiriting" : null,
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _phoneController,
-                labelText: 'Telefon raqami',
+                labelText: "Telefon raqami",
                 keyboardType: TextInputType.phone,
                 validator: (value) =>
-                    value!.trim().isEmpty ? 'Telefon raqamini kiriting' : null,
+                    value!.trim().isEmpty ? "Telefon raqamini kiriting" : null,
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _addressController,
-                labelText: 'Manzil (ixtiyoriy)',
+                labelText: "Manzil (ixtiyoriy)",
               ),
               const SizedBox(height: 32),
               _isLoading
@@ -177,7 +174,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _saveCustomer,
-                        child: const Text('Saqlash'),
+                        child: const Text("Saqlash"),
                       ),
                     ),
             ],

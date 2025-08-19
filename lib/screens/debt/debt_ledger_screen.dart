@@ -1,3 +1,5 @@
+// lib/screens/debt/debt_ledger_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +15,10 @@ class DebtLedgerScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final firestoreService = context.read<FirestoreService>();
     final currencyFormatter = NumberFormat.currency(
-        locale: 'uz_UZ', symbol: 'so\'m', decimalDigits: 0);
+      locale: 'uz_UZ',
+      symbol: 'so\'m',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -26,7 +31,9 @@ class DebtLedgerScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text('Xatolik yuz berdi: ${snapshot.error}'));
+            return Center(
+              child: Text('Xatolik yuz berdi: ${snapshot.error}'),
+            );
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return const Center(
@@ -58,10 +65,13 @@ class DebtLedgerScreen extends StatelessWidget {
                       color: debt.isPaid ? Colors.green : Colors.red,
                     ),
                   ),
-                  title: Text(debt.customerName,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text(
+                    debt.customerName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   subtitle: Text(
-                      'Sana: ${DateFormat('dd.MM.yyyy').format(debt.createdAt)}'),
+                    'Sana: ${DateFormat('dd.MM.yyyy').format(debt.createdAt)}',
+                  ),
                   trailing: Text(
                     currencyFormatter.format(debt.remainingAmount),
                     style: TextStyle(
@@ -92,6 +102,7 @@ class DebtLedgerScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Yangi qarz qo\'shish',
         onPressed: () {
           // Yangi qarz qo'shish ekraniga o'tish
           Navigator.push(
@@ -100,7 +111,6 @@ class DebtLedgerScreen extends StatelessWidget {
           );
         },
         child: const Icon(Icons.add),
-        tooltip: 'Yangi qarz qo\'shish',
       ),
     );
   }

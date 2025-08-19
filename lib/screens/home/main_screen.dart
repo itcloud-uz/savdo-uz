@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:savdo_uz/providers/auth_provider.dart';
-import 'package:savdo_uz/screens/dashboard/dashboard_screen.dart';
+// Bu model fayli mavjudligiga ishonch hosil qiling (`lib/models/menu_item_model.dart`)
+import 'package:savdo_uz/models/menu_item_model.dart';
+import 'package:savdo_uz/screens/customer/customers_screen.dart';
+import 'package:savdo_uz/screens/debt/debt_ledger_screen.dart';
+import 'package:savdo_uz/screens/employee/employees_screen.dart';
+import 'package:savdo_uz/screens/expenses/expenses_screen.dart';
 import 'package:savdo_uz/screens/inventory/inventory_screen.dart';
 import 'package:savdo_uz/screens/pos/pos_screen.dart';
+import 'package:savdo_uz/screens/reports/reports_screen.dart';
 import 'package:savdo_uz/screens/settings/settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -14,58 +18,111 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0;
+  late final List<MenuItemModel> _menuItems;
 
-  // Pastki menyudagi har bir bo'lim uchun ekranlar ro'yxati
-  static const List<Widget> _widgetOptions = <Widget>[
-    DashboardScreen(), // Boshqaruv paneli
-    POSScreen(), // Kassa
-    InventoryScreen(), // Omborxona
-    SettingsScreen(), // Sozlamalar
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _menuItems = [
+      // XATOLIK TUZATILDI: Barcha ekranlar `const` bilan to'g'ri yaratildi
+      // va `onTap` uchun to'g'ri funksiyalar ishlatildi.
+      MenuItemModel(
+        title: 'Savdo (POS)',
+        icon: Icons.point_of_sale,
+        onTap: () => _navigateTo(const POSScreen()),
+      ),
+      MenuItemModel(
+        title: 'Inventarizatsiya',
+        icon: Icons.inventory_2,
+        onTap: () => _navigateTo(const InventoryScreen()),
+      ),
+      MenuItemModel(
+        title: 'Mijozlar',
+        icon: Icons.people,
+        onTap: () => _navigateTo(const CustomersScreen()),
+      ),
+      MenuItemModel(
+        title: 'Xodimlar',
+        icon: Icons.badge,
+        onTap: () => _navigateTo(const EmployeesScreen()),
+      ),
+      MenuItemModel(
+        title: 'Qarzlar',
+        icon: Icons.money_off,
+        onTap: () => _navigateTo(const DebtLedgerScreen()),
+      ),
+      MenuItemModel(
+        title: 'Xarajatlar',
+        icon: Icons.receipt_long,
+        onTap: () => _navigateTo(const ExpensesScreen()),
+      ),
+      MenuItemModel(
+        title: 'Hisobotlar',
+        icon: Icons.bar_chart,
+        onTap: () => _navigateTo(const ReportsScreen()),
+      ),
+      MenuItemModel(
+        title: 'Sozlamalar',
+        icon: Icons.settings,
+        onTap: () => _navigateTo(const SettingsScreen()),
+      ),
+    ];
+  }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  /// Sahifalarga xavfsiz o'tish uchun yordamchi funksiya
+  void _navigateTo(Widget screen) {
+    if (mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack ekranlar orasida o'tganda ularning holatini saqlab qoladi
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _widgetOptions,
+      appBar: AppBar(
+        title: const Text('Boshqaruv Paneli'),
+        centerTitle: true,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Boshqaruv',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.point_of_sale_outlined),
-            activeIcon: Icon(Icons.point_of_sale),
-            label: 'Kassa',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2_outlined),
-            activeIcon: Icon(Icons.inventory_2),
-            label: 'Ombor',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
-            label: 'Sozlamalar',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType
-            .fixed, // Yorliqlar doim ko'rinib turishi uchun
-        showUnselectedLabels: true,
+      body: GridView.builder(
+        padding: const EdgeInsets.all(16.0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.0,
+          mainAxisSpacing: 16.0,
+          childAspectRatio: 1.2,
+        ),
+        itemCount: _menuItems.length,
+        itemBuilder: (context, index) {
+          final menuItem = _menuItems[index];
+          return GestureDetector(
+            onTap: menuItem.onTap,
+            child: Card(
+              elevation: 4.0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.0),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    menuItem.icon,
+                    size: 40,
+                    color: Theme.of(context).primaryColor,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    menuItem.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

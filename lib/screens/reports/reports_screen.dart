@@ -22,7 +22,8 @@ class ReportsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const SalesReportScreen()),
+                  builder: (context) => const SalesReportScreen(),
+                ),
               );
             },
           ),
@@ -49,19 +50,25 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReportCard(BuildContext context,
-      {required String title,
-      required String subtitle,
-      required IconData icon,
-      required VoidCallback onTap}) {
+  Widget _buildReportCard(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+          backgroundColor:
+              Theme.of(context).primaryColor.withValues(alpha: 0.1),
           child: Icon(icon, color: Theme.of(context).primaryColor),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
         onTap: onTap,

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+// XATOLIK TUZATILDI: Import yo'li to'g'rilandi.
 import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/expense_model.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/widgets/custom_textfield.dart';
+import 'package:intl/intl.dart';
 
 class AddEditExpenseScreen extends StatefulWidget {
   final Expense? expense;
@@ -16,43 +17,31 @@ class AddEditExpenseScreen extends StatefulWidget {
 
 class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _categoryController;
-  late TextEditingController _amountController;
   late TextEditingController _descriptionController;
-  late DateTime _selectedDate;
-
+  late TextEditingController _amountController;
+  DateTime _selectedDate = DateTime.now();
   bool _isLoading = false;
-
-  // Xarajat kategoriyalari ro'yxati
-  final List<String> _expenseCategories = [
-    'Ijara',
-    'Oylik maosh',
-    'Kommunal to\'lovlar',
-    'Soliqlar',
-    'Mahsulot xaridi',
-    'Marketing',
-    'Boshqa',
-  ];
 
   @override
   void initState() {
     super.initState();
-    _categoryController = TextEditingController(text: widget.expense?.category);
-    _amountController =
-        TextEditingController(text: widget.expense?.amount.toString());
     _descriptionController =
         TextEditingController(text: widget.expense?.description);
-    _selectedDate = widget.expense?.expenseDate ?? DateTime.now();
+    _amountController =
+        TextEditingController(text: widget.expense?.amount.toString());
+    if (widget.expense != null) {
+      _selectedDate = widget.expense!.date;
+    }
   }
 
   @override
   void dispose() {
-    _categoryController.dispose();
-    _amountController.dispose();
     _descriptionController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
+  /// Foydalanuvchiga sana tanlash oynasini ko'rsatish
   Future<void> _pickDate() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -67,22 +56,21 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
     }
   }
 
+  /// Xarajat ma'lumotlarini saqlash
   Future<void> _saveExpense() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
 
       final firestoreService = context.read<FirestoreService>();
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
 
       try {
         final expense = Expense(
           id: widget.expense?.id,
-          category: _categoryController.text.trim(),
-          amount: double.tryParse(_amountController.text) ?? 0.0,
-          expenseDate: _selectedDate,
           description: _descriptionController.text.trim(),
-          createdAt: widget.expense?.createdAt ?? DateTime.now(),
+          amount: double.tryParse(_amountController.text) ?? 0.0,
+          date: _selectedDate,
         );
 
         if (widget.expense == null) {
@@ -91,16 +79,13 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
           await firestoreService.updateExpense(expense);
         }
 
-        if (mounted) Navigator.pop(context);
+        navigator.pop();
       } catch (e) {
-        if (mounted)
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+        messenger.showSnackBar(SnackBar(content: Text("Xatolik: $e")));
       } finally {
-        if (mounted)
-          setState(() {
-            _isLoading = false;
-          });
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
@@ -117,58 +102,43 @@ class _AddEditExpenseScreenState extends State<AddEditExpenseScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Kategoriya tanlash
-              DropdownButtonFormField<String>(
-                value: _categoryController.text.isNotEmpty
-                    ? _categoryController.text
-                    : null,
-                hint: const Text('Kategoriyani tanlang'),
-                items: _expenseCategories.map((category) {
-                  return DropdownMenuItem(
-                      value: category, child: Text(category));
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    _categoryController.text = value;
-                  }
-                },
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Kategoriyani tanlang'
-                    : null,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
+              CustomTextField(
+                controller: _descriptionController,
+                labelText: 'Xarajat tavsifi',
+                validator: (value) =>
+                    value!.trim().isEmpty ? 'Tavsifni kiriting' : null,
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _amountController,
-                labelText: 'Miqdori (summa)',
-                keyboardType: TextInputType.number,
-                validator: (value) => (double.tryParse(value!) == null ||
-                        double.parse(value) <= 0)
-                    ? 'To\'g\'ri summa kiriting'
-                    : null,
+                labelText: 'Summasi',
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Summani kiriting';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'To\'g\'ri summa kiriting';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
-              // Sana tanlash
-              TextFormField(
-                readOnly: true,
-                controller: TextEditingController(
-                    text: DateFormat('dd.MM.yyyy').format(_selectedDate)),
-                decoration: InputDecoration(
-                  labelText: 'Sanasi',
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: _pickDate,
-                  ),
+              // Sana tanlash qismi
+              ListTile(
+                title: const Text('Sana'),
+                subtitle:
+                    Text(DateFormat('dd MMMM, yyyy').format(_selectedDate)),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: _pickDate,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.grey.shade400),
                 ),
               ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _descriptionController,
-                labelText: 'Izoh (ixtiyoriy)',
-                maxLines: 3,
-              ),
               const SizedBox(height: 32),
+
               _isLoading
                   ? const CircularProgressIndicator()
                   : SizedBox(

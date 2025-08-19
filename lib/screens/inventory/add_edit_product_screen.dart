@@ -48,10 +48,16 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
     try {
       String barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           '#ff6666', 'Bekor qilish', true, ScanMode.BARCODE);
+
+      if (!mounted) return;
+
       if (barcodeScanRes != '-1') {
-        _barcodeController.text = barcodeScanRes;
+        setState(() {
+          _barcodeController.text = barcodeScanRes;
+        });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Skanerlashda xatolik: $e')),
       );
@@ -81,16 +87,20 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           await firestoreService.updateProduct(product);
         }
 
-        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          Navigator.pop(context);
+        }
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+        }
       } finally {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
           });
+        }
       }
     }
   }
@@ -106,12 +116,13 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             '${widget.product!.name} nomli mahsulotni o\'chirishga ishonchingiz komilmi?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Bekor qilish')),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Bekor qilish'),
+          ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('O\'chirish'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
       ),
@@ -124,16 +135,21 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       try {
         final firestoreService = context.read<FirestoreService>();
         await firestoreService.deleteProduct(widget.product!.id!);
-        if (mounted) Navigator.pop(context);
+
+        if (mounted) {
+          Navigator.pop(context);
+        }
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+        }
       } finally {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
           });
+        }
       }
     }
   }
@@ -147,8 +163,8 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           if (widget.product != null)
             IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: _isLoading ? null : _deleteProduct,
               tooltip: 'O\'chirish',
+              onPressed: _isLoading ? null : _deleteProduct,
             ),
         ],
       ),

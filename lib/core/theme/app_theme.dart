@@ -1,82 +1,97 @@
-// Yorug' va qorong'u mavzular (themes).
+// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTheme {
+  /// Yengil (Light) mavzu
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     primaryColor: AppColors.primary,
     scaffoldBackgroundColor: AppColors.lightBg,
-    textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme)
-        .apply(bodyColor: AppColors.lightText),
+    fontFamily: 'Roboto',
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.lightBg,
       elevation: 0.5,
       iconTheme: IconThemeData(color: AppColors.lightText),
       titleTextStyle: TextStyle(
-          color: AppColors.lightText,
-          fontSize: 18,
-          fontWeight: FontWeight.w600),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        color: AppColors.lightText,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
       ),
     ),
-    cardTheme: CardThemeData(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    cardTheme: const CardThemeData(
       color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+      ),
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      filled: true,
-      fillColor: Colors.white,
+    dialogTheme: const DialogThemeData(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+      titleTextStyle: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: AppColors.lightText,
+      ),
+      contentTextStyle: TextStyle(
+        fontSize: 16,
+        color: AppColors.lightText,
+      ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Colors.white,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.secondary,
+      type: BottomNavigationBarType.fixed,
     ),
   );
 
+  /// Qorong‘i (Dark) mavzu
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     primaryColor: AppColors.primary,
     scaffoldBackgroundColor: AppColors.darkBg,
-    textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme)
-        .apply(bodyColor: AppColors.darkText),
+    fontFamily: 'Roboto',
     appBarTheme: const AppBarTheme(
       backgroundColor: AppColors.darkBg,
       elevation: 0.5,
       iconTheme: IconThemeData(color: AppColors.darkText),
       titleTextStyle: TextStyle(
-          color: AppColors.darkText, fontSize: 18, fontWeight: FontWeight.w600),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        color: AppColors.darkText,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
       ),
     ),
-    cardTheme: CardThemeData(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: const Color(0xFF2b3035),
+    cardTheme: const CardThemeData(
+      color: Color(0xFF2C2C2C),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+      ),
     ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      filled: true,
-      fillColor: const Color(0xFF2b3035),
+    dialogTheme: const DialogThemeData(
+      backgroundColor: Color(0xFF2C2C2C),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+      ),
+      titleTextStyle: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: AppColors.darkText,
+      ),
+      contentTextStyle: TextStyle(
+        fontSize: 16,
+        color: AppColors.darkText,
+      ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+      backgroundColor: Color(0xFF2C2C2C),
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.secondary,
+      type: BottomNavigationBarType.fixed,
     ),
   );
 }

@@ -54,7 +54,8 @@ class DebtDetailScreen extends StatelessWidget {
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                          content: Text('To\'lov muvaffaqiyatli qo\'shildi!')),
+                        content: Text('To\'lov muvaffaqiyatli qo\'shildi!'),
+                      ),
                     );
                   }
                 } catch (e) {
@@ -90,8 +91,10 @@ class DebtDetailScreen extends StatelessWidget {
           children: [
             _buildInfoCard(context, currencyFormatter),
             const SizedBox(height: 24),
-            Text('To\'lovlar tarixi',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              'To\'lovlar tarixi',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
             const SizedBox(height: 8),
             _buildPaymentsList(currencyFormatter, dateFormatter),
           ],
@@ -101,8 +104,8 @@ class DebtDetailScreen extends StatelessWidget {
           ? null
           : FloatingActionButton(
               onPressed: () => _showAddPaymentDialog(context),
-              child: const Icon(Icons.add),
               tooltip: 'To\'lov qo\'shish',
+              child: const Icon(Icons.add),
             ),
     );
   }
@@ -114,8 +117,10 @@ class DebtDetailScreen extends StatelessWidget {
         child: Column(
           children: [
             _buildInfoRow('Umumiy qarz:', formatter.format(debt.initialAmount)),
-            _buildInfoRow('To\'langan:',
-                formatter.format(debt.initialAmount - debt.remainingAmount)),
+            _buildInfoRow(
+              'To\'langan:',
+              formatter.format(debt.initialAmount - debt.remainingAmount),
+            ),
             const Divider(height: 24),
             _buildInfoRow(
               'Qoldiq:',
@@ -129,34 +134,48 @@ class DebtDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value,
-      {bool isTotal = false, Color? color}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    bool isTotal = false,
+    Color? color,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: isTotal ? 18 : 16,
-                  fontWeight: isTotal ? FontWeight.bold : FontWeight.normal)),
-          Text(value,
-              style: TextStyle(
-                  fontSize: isTotal ? 18 : 16,
-                  fontWeight: FontWeight.bold,
-                  color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 16,
+              fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isTotal ? 18 : 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildPaymentsList(
-      NumberFormat currencyFormatter, DateFormat dateFormatter) {
+    NumberFormat currencyFormatter,
+    DateFormat dateFormatter,
+  ) {
     if (debt.payments.isEmpty) {
       return const Card(
         child: Padding(
           padding: EdgeInsets.all(20.0),
-          child: Center(child: Text('Hali to\'lovlar qilinmagan.')),
+          child: Center(
+            child: Text('Hali to\'lovlar qilinmagan.'),
+          ),
         ),
       );
     }
@@ -168,7 +187,9 @@ class DebtDetailScreen extends StatelessWidget {
         itemBuilder: (context, index) {
           final payment = debt.payments[index];
           return ListTile(
-            leading: const CircleAvatar(child: Icon(Icons.payment)),
+            leading: const CircleAvatar(
+              child: Icon(Icons.payment),
+            ),
             title: Text(currencyFormatter.format(payment.amount)),
             subtitle: Text(dateFormatter.format(payment.paidAt)),
           );

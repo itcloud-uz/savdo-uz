@@ -1,42 +1,37 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Xarajat ma'lumotlari uchun model
 class Expense {
   final String? id;
-  final String category;
+  final String description;
   final double amount;
-  final DateTime expenseDate;
-  final String? description;
-  final DateTime createdAt;
+  // XATOLIK TUZATILDI: Yetishmayotgan `date` maydoni qo'shildi.
+  final DateTime date;
 
   Expense({
     this.id,
-    required this.category,
+    required this.description,
     required this.amount,
-    required this.expenseDate,
-    this.description,
-    required this.createdAt,
+    required this.date,
   });
 
+  /// Firestore'dan olingan ma'lumotlarni `Expense` obyektiga o'girish.
   factory Expense.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Expense(
       id: doc.id,
-      category: data['category'] ?? '',
-      amount: (data['amount'] ?? 0.0).toDouble(),
-      expenseDate: (data['expenseDate'] as Timestamp).toDate(),
-      description: data['description'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      description: data['description'] ?? '',
+      amount: (data['amount'] ?? 0).toDouble(),
+      // Sanani `Timestamp`dan `DateTime`ga o'girib olamiz.
+      date: (data['date'] as Timestamp).toDate(),
     );
   }
 
+  /// `Expense` obyektini Firestore'ga yozish uchun Map'ga o'girish.
   Map<String, dynamic> toFirestore() {
     return {
-      'category': category,
-      'amount': amount,
-      'expenseDate': Timestamp.fromDate(expenseDate),
       'description': description,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'amount': amount,
+      'date': Timestamp.fromDate(date),
     };
   }
 }

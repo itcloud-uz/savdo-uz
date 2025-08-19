@@ -48,20 +48,27 @@ class _AddDebtScreenState extends State<AddDebtScreen> {
 
         await firestoreService.addDebt(newDebt);
 
-        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          Navigator.pop(context);
+        }
       } catch (e) {
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text("Xatolik: $e")));
+        }
       } finally {
-        if (mounted)
+        if (mounted) {
           setState(() {
             _isLoading = false;
           });
+        }
       }
     } else if (_selectedCustomer == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Iltimos, mijozni tanlang")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Iltimos, mijozni tanlang")),
+        );
+      }
     }
   }
 
@@ -71,7 +78,7 @@ class _AddDebtScreenState extends State<AddDebtScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Yangi Qarz Qo\'shish'),
+        title: const Text("Yangi Qarz Qo'shish"),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -84,11 +91,12 @@ class _AddDebtScreenState extends State<AddDebtScreen> {
               StreamBuilder<List<Customer>>(
                 stream: firestoreService.getCustomers(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData)
+                  if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
+                  }
                   final customers = snapshot.data!;
                   return DropdownButtonFormField<Customer>(
-                    value: _selectedCustomer,
+                    initialValue: _selectedCustomer,
                     hint: const Text('Mijozni tanlang'),
                     isExpanded: true,
                     items: customers.map((customer) {
@@ -118,7 +126,7 @@ class _AddDebtScreenState extends State<AddDebtScreen> {
                 keyboardType: TextInputType.number,
                 validator: (value) => (double.tryParse(value!) == null ||
                         double.parse(value) <= 0)
-                    ? 'To\'g\'ri summa kiriting'
+                    ? "To'g'ri summa kiriting"
                     : null,
               ),
               const SizedBox(height: 16),
