@@ -2,11 +2,12 @@ import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:savdo_uz/app.dart';
+import 'package:savdo_uz/core/theme/app_theme.dart';
 import 'package:savdo_uz/firebase_options.dart';
 import 'package:savdo_uz/providers/auth_provider.dart';
 import 'package:savdo_uz/providers/cart_provider.dart';
 import 'package:savdo_uz/providers/theme_provider.dart';
+import 'package:savdo_uz/screens/splash/splash_screen.dart'; // Splash Screen'ni chaqirish
 import 'package:savdo_uz/services/auth_service.dart';
 import 'package:savdo_uz/services/face_recognition_service.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
@@ -15,15 +16,19 @@ import 'package:savdo_uz/services/firestore_service.dart';
 List<CameraDescription> cameras = [];
 
 Future<void> main() async {
+  // Flutter binding'larini initsializatsiya qilish
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Firebase'ni initsializatsiya qilish
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // Kameralarni topish va initsializatsiya qilish
   try {
     cameras = await availableCameras();
   } catch (e, stack) {
+    // Xatolik yuz bersa, konsolga chiqarish
     FlutterError.reportError(
       FlutterErrorDetails(
         exception: e,
@@ -34,15 +39,9 @@ Future<void> main() async {
     );
   }
 
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
+  // Provider'lar bilan ilovani ishga tushirish
+  runApp(
+    MultiProvider(
       providers: [
         /// Servislar
         Provider<AuthService>(create: (_) => AuthService()),
@@ -70,7 +69,26 @@ class MyApp extends StatelessWidget {
           create: (_) => CartProvider(),
         ),
       ],
-      child: const App(),
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // Mavzu (theme) provider'ini olish
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
+    return MaterialApp(
+      title: 'Savdo-UZ',
+      theme: AppTheme.lightTheme, // Yorug' mavzu
+      darkTheme: AppTheme.darkTheme, // Qorong'u mavzu
+      themeMode: themeProvider.themeMode, // Mavzuni provider'dan olish
+      debugShowCheckedModeBanner: false,
+      home: const SplashScreen(), // Dasturni SplashScreen'dan boshlash
     );
   }
 }
