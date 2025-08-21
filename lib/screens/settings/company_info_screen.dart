@@ -16,23 +16,23 @@ class CompanyInfoScreen extends StatelessWidget {
           children: [
             ListTile(
               leading: Icon(Icons.business),
-              title: Text('Kompaniya Nomi'),
-              subtitle: Text('Savdo-UZ MChJ'),
+              title: Text('Kompaniya ITC'),
+              subtitle: Text('IT Cloud'),
             ),
             ListTile(
               leading: Icon(Icons.location_on_outlined),
               title: Text('Manzil'),
-              subtitle: Text('Toshkent shahri, Amir Temur ko\'chasi, 1-uy'),
+              subtitle: Text('Urgut Shahri'),
             ),
             ListTile(
               leading: Icon(Icons.phone_outlined),
               title: Text('Telefon'),
-              subtitle: Text('+998 71 234 56 78'),
+              subtitle: Text('+998 91 187 37 30'),
             ),
             ListTile(
               leading: Icon(Icons.alternate_email),
               title: Text('Email'),
-              subtitle: Text('info@savdo.uz'),
+              subtitle: Text('itclouduz@gmail.com'),
             ),
           ],
         ),
