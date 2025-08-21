@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '280839047582',
     projectId: 'savdo-uz-app',
     authDomain: 'savdo-uz-app.firebaseapp.com',
+    databaseURL: 'https://savdo-uz-app-default-rtdb.firebaseio.com',
     storageBucket: 'savdo-uz-app.firebasestorage.app',
     measurementId: 'G-VS5BH3VVS8',
   );
@@ -55,6 +56,7 @@ class DefaultFirebaseOptions {
     appId: '1:280839047582:android:886f1fa403ce9bf65bae8f',
     messagingSenderId: '280839047582',
     projectId: 'savdo-uz-app',
+    databaseURL: 'https://savdo-uz-app-default-rtdb.firebaseio.com',
     storageBucket: 'savdo-uz-app.firebasestorage.app',
   );
 
@@ -64,6 +66,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '280839047582',
     projectId: 'savdo-uz-app',
     authDomain: 'savdo-uz-app.firebaseapp.com',
+    databaseURL: 'https://savdo-uz-app-default-rtdb.firebaseio.com',
     storageBucket: 'savdo-uz-app.firebasestorage.app',
     measurementId: 'G-N10RL7E0L1',
   );
@@ -73,6 +76,7 @@ class DefaultFirebaseOptions {
     appId: '1:280839047582:ios:7ea8e94fe194d4115bae8f',
     messagingSenderId: '280839047582',
     projectId: 'savdo-uz-app',
+    databaseURL: 'https://savdo-uz-app-default-rtdb.firebaseio.com',
     storageBucket: 'savdo-uz-app.firebasestorage.app',
     iosBundleId: 'com.example.savdoUz',
   );
@@ -82,6 +86,7 @@ class DefaultFirebaseOptions {
     appId: '1:280839047582:ios:7ea8e94fe194d4115bae8f',
     messagingSenderId: '280839047582',
     projectId: 'savdo-uz-app',
+    databaseURL: 'https://savdo-uz-app-default-rtdb.firebaseio.com',
     storageBucket: 'savdo-uz-app.firebasestorage.app',
     iosBundleId: 'com.example.savdoUz',
   );

@@ -90,22 +90,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildGreetingCard(currentUser),
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
             _buildSectionTitle('Umumiy Holat'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _buildSummaryCards(firestoreService),
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
             _buildSectionTitle('Tezkor Amallar'),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _buildQuickActionsGrid(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
             _buildSectionTitle("So'nggi Sotuvlar"),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _buildRecentSalesList(firestoreService),
           ],
         ),
@@ -118,24 +118,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
       elevation: 0,
       color: Theme.of(context).primaryColor.withAlpha(13),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: Row(
           children: [
-            const Icon(Icons.person_pin, size: 40, color: Colors.blueGrey),
-            const SizedBox(width: 16),
+            const Icon(Icons.person_pin, size: 28, color: Colors.blueGrey),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Xush kelibsiz!',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Text(
                     user?.email ?? 'Foydalanuvchi',
                     style: Theme.of(context)
                         .textTheme
-                        .titleMedium
+                        .titleSmall
                         ?.copyWith(fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -151,20 +151,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge,
+      style: Theme.of(context)
+          .textTheme
+          .titleSmall
+          ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 
   Widget _buildQuickActionsGrid() {
-    int crossAxisCount = (MediaQuery.of(context).size.width / 180).floor();
+    int crossAxisCount = (MediaQuery.of(context).size.width / 140).floor();
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount < 2 ? 2 : crossAxisCount,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.5,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 1.7,
       ),
       itemCount: _quickActions.length,
       itemBuilder: (context, index) {
@@ -310,25 +313,24 @@ class SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: isLoading
             ? const SizedBox(
-                height: 85, child: Center(child: CircularProgressIndicator()))
+                height: 60, child: Center(child: CircularProgressIndicator()))
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, size: 28, color: color),
-                  const SizedBox(height: 12),
+                  Icon(icon, size: 20, color: color),
+                  const SizedBox(height: 8),
                   Text(title, style: Theme.of(context).textTheme.bodySmall),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Text(value,
-                          style: Theme.of(context).textTheme.headlineSmall),
-                      const SizedBox(width: 4),
+                      Text(value, style: Theme.of(context).textTheme.bodyLarge),
+                      const SizedBox(width: 2),
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 2.0),
+                        padding: const EdgeInsets.only(bottom: 1.0),
                         child: Text(unit,
                             style: Theme.of(context).textTheme.bodySmall),
                       ),
@@ -358,16 +360,19 @@ class ActionCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: Theme.of(context).primaryColor),
-            const SizedBox(height: 8),
-            Text(label,
-                style: Theme.of(context).textTheme.titleMedium,
-                textAlign: TextAlign.center),
-          ],
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 2.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 20, color: Theme.of(context).primaryColor),
+              const SizedBox(height: 4),
+              Text(label,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );

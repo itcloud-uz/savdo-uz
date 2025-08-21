@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/customer_model.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/widgets/custom_textfield.dart';
+import 'package:savdo_uz/providers/theme_provider.dart';
 
 class AddEditCustomerScreen extends StatefulWidget {
   final Customer? customer; // Tahrirlash uchun mijoz ma'lumotlari
@@ -43,7 +44,8 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
         _isLoading = true;
       });
 
-      final firestoreService = context.read<FirestoreService>();
+      final ctx = context;
+      final firestoreService = ctx.read<FirestoreService>();
 
       try {
         final customer = Customer(
@@ -60,11 +62,11 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
           await firestoreService.updateCustomer(customer);
         }
 
-        if (!mounted) return; // 🔑 async gapdan keyin qo'shildi
-        Navigator.pop(context);
+        if (!mounted) return;
+        Navigator.pop(ctx);
       } catch (e) {
-        if (!mounted) return; // 🔑 async gapdan keyin qo'shildi
-        ScaffoldMessenger.of(context).showSnackBar(
+        if (!mounted) return;
+        ScaffoldMessenger.of(ctx).showSnackBar(
           SnackBar(content: Text("Xatolik yuz berdi: $e")),
         );
       } finally {
@@ -129,6 +131,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -177,6 +180,34 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                         child: const Text("Saqlash"),
                       ),
                     ),
+              const SizedBox(height: 32),
+              RadioListTile<ThemeMode>(
+                title: const Text('Tizim sozlamasi'),
+                value: ThemeMode.system,
+                selected: themeProvider.themeMode == ThemeMode.system,
+                onChanged: (value) {
+                  if (value != null) themeProvider.setThemeMode(value);
+                  Navigator.pop(context);
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: const Text('Yorug\' rejim'),
+                value: ThemeMode.light,
+                selected: themeProvider.themeMode == ThemeMode.light,
+                onChanged: (value) {
+                  if (value != null) themeProvider.setThemeMode(value);
+                  Navigator.pop(context);
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: const Text('Qorong\'u rejim'),
+                value: ThemeMode.dark,
+                selected: themeProvider.themeMode == ThemeMode.dark,
+                onChanged: (value) {
+                  if (value != null) themeProvider.setThemeMode(value);
+                  Navigator.pop(context);
+                },
+              ),
             ],
           ),
         ),

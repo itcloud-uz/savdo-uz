@@ -1,5 +1,6 @@
 // Firebase Authentication bilan ishlash servisi.
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:developer';
 
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -16,7 +17,7 @@ class AuthService {
       return result.user;
     } catch (e) {
       // Xatolikni qayta ishlash (masalan, log yozish)
-      print(e.toString());
+      log(e.toString());
       return null;
     }
   }

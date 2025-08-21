@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "280839047582",
+    "firebase_url": "https://savdo-uz-app-default-rtdb.firebaseio.com",
     "project_id": "savdo-uz-app",
     "storage_bucket": "savdo-uz-app.firebasestorage.app"
   },

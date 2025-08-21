@@ -1,17 +1,14 @@
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:savdo_uz/models/employee_model.dart';
-import 'package:savdo_uz/services/face_recognition_service.dart';
-import 'package:savdo_uz/services/firestore_service.dart';
-import 'package:savdo_uz/widgets/custom_textfield.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:io';
+import '../../models/employee_model.dart';
+import '../../services/firestore_service.dart';
+import '../../widgets/custom_textfield.dart';
 
 class AddEditEmployeeScreen extends StatefulWidget {
-  final Employee? employee;
-
   const AddEditEmployeeScreen({super.key, this.employee});
+  final Employee? employee;
 
   @override
   State<AddEditEmployeeScreen> createState() => _AddEditEmployeeScreenState();
@@ -22,12 +19,13 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   late TextEditingController _nameController;
   late TextEditingController _positionController;
   late TextEditingController _phoneController;
-
-  File? _selectedImage;
+  late TextEditingController _loginController;
+  late TextEditingController _passwordController;
   String? _existingImageUrl;
-  List<double>? _faceData;
   bool _isLoading = false;
-  String _statusMessage = 'Rasmni tanlang';
+  String _statusMessage = '';
+  List<double>? _faceData;
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -36,54 +34,28 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     _positionController =
         TextEditingController(text: widget.employee?.position);
     _phoneController = TextEditingController(text: widget.employee?.phone);
+    _loginController = TextEditingController(text: widget.employee?.login);
+    _passwordController =
+        TextEditingController(text: widget.employee?.password);
     _existingImageUrl = widget.employee?.imageUrl;
-    if (widget.employee?.faceData.isNotEmpty ?? false) {
-      _faceData = List<double>.from(widget.employee!.faceData);
-      _statusMessage = 'Yuz ma\'lumoti mavjud';
-    }
+    _faceData = widget.employee?.faceData != null
+        ? widget.employee!.faceData.map((e) => e as double).toList()
+        : null;
   }
+
+  Future<void> _pickAndRegisterFace() async {}
 
   @override
   void dispose() {
     _nameController.dispose();
     _positionController.dispose();
     _phoneController.dispose();
+    _loginController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickAndRegisterFace() async {
-    final faceRecognitionService = context.read<FaceRecognitionService>();
-    final picker = ImagePicker();
-    final pickedFile =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-
-    if (pickedFile == null) return;
-
-    setState(() {
-      _selectedImage = File(pickedFile.path);
-      _isLoading = true;
-      _statusMessage = 'Yuz aniqlanmoqda...';
-    });
-
-    final embedding =
-        await faceRecognitionService.getEmbeddingFromImageFile(pickedFile);
-
-    if (mounted) {
-      if (embedding != null) {
-        setState(() {
-          _faceData = embedding;
-          _isLoading = false;
-          _statusMessage = 'Yuz muvaffaqiyatli aniqlandi!';
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-          _statusMessage = 'Rasmdan yuz topilmadi. Boshqa rasm tanlang.';
-          _selectedImage = null;
-        });
-      }
-    }
-  }
+  // ...existing code...
 
   Future<void> _saveEmployee() async {
     if (_formKey.currentState!.validate()) {
@@ -105,6 +77,8 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
           name: _nameController.text.trim(),
           position: _positionController.text.trim(),
           phone: _phoneController.text.trim(),
+          login: _loginController.text.trim(),
+          password: _passwordController.text.trim(),
           imageUrl: imageUrl,
           faceData: _faceData ?? [],
         );
@@ -224,6 +198,21 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                 controller: _phoneController,
                 labelText: 'Telefon raqami',
                 keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _loginController,
+                labelText: 'Login',
+                validator: (value) =>
+                    value!.trim().isEmpty ? 'Login kiriting' : null,
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _passwordController,
+                labelText: 'Parol',
+                obscureText: true,
+                validator: (value) =>
+                    value!.trim().isEmpty ? 'Parol kiriting' : null,
               ),
               const SizedBox(height: 32),
               _isLoading

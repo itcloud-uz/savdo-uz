@@ -6,7 +6,8 @@ class Employee {
   final String position;
   final String? phone;
   final String? imageUrl;
-  // YETISHMAYOTGAN QISM QO'SHILDI: Yuz ma'lumotlarini saqlash uchun maydon.
+  final String? login;
+  final String? password;
   final List<dynamic> faceData;
 
   Employee({
@@ -15,7 +16,9 @@ class Employee {
     required this.position,
     this.phone,
     this.imageUrl,
-    this.faceData = const [], // Standart qiymat sifatida bo'sh ro'yxat berildi
+    this.login,
+    this.password,
+    this.faceData = const [],
   });
 
   /// Firestore'dan olingan ma'lumotlarni `Employee` obyektiga o'girish.
@@ -27,7 +30,8 @@ class Employee {
       position: data['position'] ?? '',
       phone: data['phone'],
       imageUrl: data['imageUrl'],
-      // Firestore'dan `faceData`ni o'qish
+      login: data['login'],
+      password: data['password'],
       faceData: List<dynamic>.from(data['faceData'] ?? []),
     );
   }
@@ -39,6 +43,8 @@ class Employee {
       'position': position,
       'phone': phone,
       'imageUrl': imageUrl,
+      'login': login,
+      'password': password,
       'faceData': faceData,
     };
   }

@@ -41,98 +41,164 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  Future<void> _faceLogin() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const FaceScanScreen()),
+    );
+    if (result != null && result.runtimeType.toString() == 'Employee') {
+      // Xodim topildi, bo‘limiga yo‘naltirish
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+      );
+    } else if (result == 'not_found') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Yuz ma’lumoti topilmadi!')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Icon(Icons.storefront_outlined,
-                    size: 80, color: Theme.of(context).primaryColor),
-                const SizedBox(height: 16),
-                Text('Tizimga xush kelibsiz!',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold)),
-                Text('Savdo.uz hisobingizga kiring',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium),
-                const SizedBox(height: 40),
-                TextFormField(
-                    controller: _loginController,
-                    decoration: const InputDecoration(
-                        labelText: 'Login',
-                        prefixIcon: Icon(Icons.person_outline),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(12))))),
-                const SizedBox(height: 16),
-                TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                        labelText: 'Parol',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(
-                            borderRadius:
-                                BorderRadius.all(Radius.circular(12))))),
-                const SizedBox(height: 24),
-                if (_errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Text(_errorMessage!,
-                        style: const TextStyle(color: Colors.red, fontSize: 14),
-                        textAlign: TextAlign.center),
-                  ),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12))),
-                        child: const Text('Kirish',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/images/kirish_orqafon.jpg',
+            fit: BoxFit.cover,
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 24.0),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 350),
+                  padding: const EdgeInsets.all(16.0),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context)
+                        .cardColor
+                        .withAlpha((0.85 * 255).toInt()),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 12,
+                        offset: Offset(0, 4),
                       ),
-                const SizedBox(height: 16),
-                const Row(children: [
-                  Expanded(child: Divider()),
-                  Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12.0),
-                      child:
-                          Text('yoki', style: TextStyle(color: Colors.grey))),
-                  Expanded(child: Divider())
-                ]),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const FaceScanScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.face_retouching_natural_outlined),
-                  label: const Text('Yuz orqali skanerlash'),
-                  style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12))),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Icon(Icons.storefront_outlined,
+                          size: 56, color: Theme.of(context).primaryColor),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.face),
+                        label: const Text('Yuz orqali kirish'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue.shade600,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                          elevation: 2,
+                        ),
+                        onPressed: _faceLogin,
+                      ),
+                      const SizedBox(height: 10),
+                      Text('Tizimga xush kelibsiz!',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      Text('Savdo.uz hisobingizga kiring',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodySmall),
+                      const SizedBox(height: 24),
+                      TextFormField(
+                          controller: _loginController,
+                          style: const TextStyle(fontSize: 14),
+                          decoration: const InputDecoration(
+                              labelText: 'Login',
+                              prefixIcon: Icon(Icons.person_outline, size: 20),
+                              border: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(8))))),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          style: const TextStyle(fontSize: 14),
+                          decoration: const InputDecoration(
+                              labelText: 'Parol',
+                              prefixIcon: Icon(Icons.lock_outline, size: 20),
+                              border: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(8))))),
+                      const SizedBox(height: 16),
+                      if (_errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text(_errorMessage!,
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 13),
+                              textAlign: TextAlign.center),
+                        ),
+                      _isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : ElevatedButton(
+                              onPressed: _login,
+                              style: ElevatedButton.styleFrom(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 10),
+                                  textStyle: const TextStyle(fontSize: 15),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8))),
+                              child: const Text('Kirish'),
+                            ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: const [
+                          Expanded(child: Divider()),
+                          Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.0),
+                              child: Text('yoki',
+                                  style: TextStyle(
+                                      color: Colors.grey, fontSize: 13))),
+                          Expanded(child: Divider())
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const FaceScanScreen()),
+                          );
+                        },
+                        icon: const Icon(Icons.face_retouching_natural_outlined,
+                            size: 20),
+                        label: const Text('Yuz orqali skanerlash',
+                            style: TextStyle(fontSize: 14)),
+                        style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8))),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

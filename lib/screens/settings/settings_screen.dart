@@ -73,7 +73,7 @@ class SettingsScreen extends StatelessWidget {
             RadioListTile<ThemeMode>(
               title: const Text('Tizim sozlamasi'),
               value: ThemeMode.system,
-              groupValue: themeProvider.themeMode,
+              selected: themeProvider.themeMode == ThemeMode.system,
               onChanged: (value) {
                 if (value != null) themeProvider.setThemeMode(value);
                 Navigator.pop(context);
@@ -82,7 +82,7 @@ class SettingsScreen extends StatelessWidget {
             RadioListTile<ThemeMode>(
               title: const Text('Yorug\' rejim'),
               value: ThemeMode.light,
-              groupValue: themeProvider.themeMode,
+              selected: themeProvider.themeMode == ThemeMode.light,
               onChanged: (value) {
                 if (value != null) themeProvider.setThemeMode(value);
                 Navigator.pop(context);
@@ -91,7 +91,7 @@ class SettingsScreen extends StatelessWidget {
             RadioListTile<ThemeMode>(
               title: const Text('Qorong\'u rejim'),
               value: ThemeMode.dark,
-              groupValue: themeProvider.themeMode,
+              selected: themeProvider.themeMode == ThemeMode.dark,
               onChanged: (value) {
                 if (value != null) themeProvider.setThemeMode(value);
                 Navigator.pop(context);

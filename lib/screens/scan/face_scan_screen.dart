@@ -49,16 +49,24 @@ class _FaceScanScreenState extends State<FaceScanScreen> {
 
       await _cameraController!.initialize();
 
-      _cameraController!.startImageStream((image) {
-        if (!_isProcessing) {
-          _processImage(image, frontCamera);
-        }
-      });
-
-      if (mounted) {
-        setState(() {
-          _isCameraInitialized = true;
+      // Windows va boshqa platformalarda image streamingni try/catch bilan boshlash
+      try {
+        _cameraController!.startImageStream((image) {
+          if (!_isProcessing) {
+            _processImage(image, frontCamera);
+          }
         });
+        if (mounted) {
+          setState(() {
+            _isCameraInitialized = true;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _message = "Bu kamera image streamingni qo‘llab-quvvatlamaydi.";
+          });
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -82,47 +82,95 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: const Text('Boshqaruv Paneli'),
         centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16.0),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16.0,
-          mainAxisSpacing: 16.0,
-          childAspectRatio: 1.2,
-        ),
-        itemCount: _menuItems.length,
-        itemBuilder: (context, index) {
-          final menuItem = _menuItems[index];
-          return GestureDetector(
-            onTap: menuItem.onTap,
-            child: Card(
-              elevation: 4.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    menuItem.icon,
-                    size: 40,
-                    color: Theme.of(context).primaryColor,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    menuItem.title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          // Orqafon rasmi
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/kirish_orqafon.jpg',
+              fit: BoxFit.cover,
             ),
-          );
-        },
+          ),
+          // Shaffof effekt
+          Positioned.fill(
+            child: Container(
+              color: Theme.of(context)
+                  .scaffoldBackgroundColor
+                  .withAlpha((0.25 * 255).toInt()),
+            ),
+          ),
+          // Menyu grid
+          Center(
+            child: GridView.builder(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 80.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 10.0,
+                mainAxisSpacing: 10.0,
+                childAspectRatio: 1.2,
+              ),
+              itemCount: 16, // 4x4 grid
+              itemBuilder: (context, index) {
+                if (index < _menuItems.length) {
+                  final menuItem = _menuItems[index];
+                  return GestureDetector(
+                    onTap: menuItem.onTap,
+                    child: Card(
+                      elevation: 3.0,
+                      color: Theme.of(context)
+                          .cardColor
+                          .withAlpha((0.85 * 255).toInt()),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              menuItem.icon,
+                              size: 38,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              menuItem.title,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                } else {
+                  // Bo'sh kvadratlar
+                  return Card(
+                    elevation: 0,
+                    color: Theme.of(context)
+                        .cardColor
+                        .withAlpha((0.3 * 255).toInt()),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16.0),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

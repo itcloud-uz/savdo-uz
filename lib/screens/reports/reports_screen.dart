@@ -11,7 +11,7 @@ class ReportsScreen extends StatelessWidget {
         title: const Text('Hisobotlar'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(4.0),
         children: [
           _buildReportCard(
             context,
@@ -58,19 +58,21 @@ class ReportsScreen extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         leading: CircleAvatar(
+          radius: 16,
           backgroundColor:
               Theme.of(context).primaryColor.withValues(alpha: 0.1),
-          child: Icon(icon, color: Theme.of(context).primaryColor),
+          child: Icon(icon, color: Theme.of(context).primaryColor, size: 18),
         ),
         title: Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
         ),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        trailing: const Icon(Icons.chevron_right, size: 18),
         onTap: onTap,
       ),
     );
