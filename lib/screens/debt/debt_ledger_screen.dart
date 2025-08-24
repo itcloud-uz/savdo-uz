@@ -7,6 +7,10 @@ import 'package:savdo_uz/models/debt_model.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/screens/debt/add_debt_screen.dart';
 import 'package:savdo_uz/screens/debt/debt_detail_screen.dart';
+import 'package:savdo_uz/widgets/loading_list_tile.dart';
+import 'package:savdo_uz/widgets/error_retry_widget.dart';
+import 'package:savdo_uz/widgets/empty_state_widget.dart';
+import 'package:savdo_uz/widgets/accessible_icon_button.dart';
 
 class DebtLedgerScreen extends StatelessWidget {
   const DebtLedgerScreen({super.key});
@@ -28,20 +32,22 @@ class DebtLedgerScreen extends StatelessWidget {
         stream: firestoreService.getDebts(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return ListView.builder(
+              itemCount: 5,
+              itemBuilder: (ctx, i) => const LoadingListTile(),
+            );
           }
           if (snapshot.hasError) {
-            return Center(
-              child: Text('Xatolik yuz berdi: ${snapshot.error}'),
+            return ErrorRetryWidget(
+              errorMessage: 'Xatolik yuz berdi: ${snapshot.error}',
+              onRetry: () => {},
             );
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-              child: Text(
-                'Qarzlar mavjud emas.\nYangi qarz qo\'shish uchun "+" tugmasini bosing.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
-              ),
+            return const EmptyStateWidget(
+              message:
+                  'Qarzlar mavjud emas. Yangi qarz qo‘shish uchun + tugmasini bosing.',
+              icon: Icons.money_off,
             );
           }
 
@@ -87,7 +93,6 @@ class DebtLedgerScreen extends StatelessWidget {
                     ),
                   ),
                   onTap: () {
-                    // Qarzning batafsil ma'lumotlari ekraniga o'tish
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -101,16 +106,17 @@ class DebtLedgerScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Yangi qarz qo\'shish',
+      floatingActionButton: AccessibleIconButton(
+        icon: Icons.add,
+        semanticLabel: 'Yangi qarz qo‘shish',
         onPressed: () {
-          // Yangi qarz qo'shish ekraniga o'tish
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddDebtScreen()),
           );
         },
-        child: const Icon(Icons.add),
+        color: Colors.white,
+        size: 28,
       ),
     );
   }

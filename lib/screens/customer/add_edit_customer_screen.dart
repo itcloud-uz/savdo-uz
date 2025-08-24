@@ -15,6 +15,8 @@ class AddEditCustomerScreen extends StatefulWidget {
 }
 
 class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
+  final _phoneRegex =
+      RegExp(r'^(\+998|998)?[ -]?(\d{2})[ -]?(\d{3})[ -]?(\d{2})[ -]?(\d{2})');
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
@@ -44,8 +46,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
         _isLoading = true;
       });
 
-      final ctx = context;
-      final firestoreService = ctx.read<FirestoreService>();
+      final firestoreService = context.read<FirestoreService>();
 
       try {
         final customer = Customer(
@@ -63,10 +64,10 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
         }
 
         if (!mounted) return;
-        Navigator.pop(ctx);
+        Navigator.pop(context);
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(ctx).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Xatolik yuz berdi: $e")),
         );
       } finally {
@@ -162,8 +163,13 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                 controller: _phoneController,
                 labelText: "Telefon raqami",
                 keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value!.trim().isEmpty ? "Telefon raqamini kiriting" : null,
+                validator: (value) {
+                  final v = value?.trim() ?? '';
+                  if (v.isEmpty) return "Telefon raqamini kiriting";
+                  if (!_phoneRegex.hasMatch(v))
+                    return "To‘g‘ri telefon raqamini kiriting (998 XX XXX XX XX)";
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               CustomTextField(

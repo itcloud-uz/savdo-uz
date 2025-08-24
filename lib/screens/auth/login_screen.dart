@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:savdo_uz/screens/home/main_screen.dart';
 import 'package:savdo_uz/screens/scan/face_scan_screen.dart';
 
@@ -66,8 +67,16 @@ class _LoginScreenState extends State<LoginScreen> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/kirish_orqafon.jpg',
+            'assets/images/kirish_orqafoni.jpg',
             fit: BoxFit.cover,
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                color: Colors.black.withOpacity(0.18),
+              ),
+            ),
           ),
           SafeArea(
             child: Center(
@@ -78,9 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 350),
                   padding: const EdgeInsets.all(16.0),
                   decoration: BoxDecoration(
-                    color: Theme.of(context)
-                        .cardColor
-                        .withAlpha((0.85 * 255).toInt()),
+                    color: Theme.of(context).cardColor.withOpacity(0.65),
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -98,28 +105,37 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 56, color: Theme.of(context).primaryColor),
                       const SizedBox(height: 10),
                       ElevatedButton.icon(
-                        icon: const Icon(Icons.face),
+                        icon: const Icon(Icons.verified_user, size: 24),
                         label: const Text('Yuz orqali kirish'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue.shade600,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                          elevation: 2,
+                              borderRadius: BorderRadius.circular(12)),
+                          elevation: 3,
                         ),
                         onPressed: _faceLogin,
                       ),
-                      const SizedBox(height: 10),
                       Text('Tizimga xush kelibsiz!',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold)),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white
+                                        : Colors.black,
+                                  )),
                       Text('Savdo.uz hisobingizga kiring',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white70
+                                        : Colors.black87,
+                                  )),
                       const SizedBox(height: 24),
                       TextFormField(
                           controller: _loginController,

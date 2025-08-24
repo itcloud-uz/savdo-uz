@@ -1,0 +1,22 @@
+{
+  "appTitle": "Savdo-UZ",
+  "employeeAdd": "Add Employee",
+  "employeeEdit": "Edit Employee",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "save": "Save",
+  "name": "Name",
+  "position": "Position",
+  "phone": "Phone",
+  "email": "Email (optional)",
+  "login": "Login",
+  "password": "Password",
+  "faceScan": "Face Scan",
+  "validationName": "Please enter name",
+  "validationPosition": "Please enter position",
+  "validationPhone": "Please enter phone number",
+  "validationPhoneFormat": "Enter a valid phone number (998 XX XXX XX XX)",
+  "validationEmailFormat": "Enter a valid email (e.g. user@mail.com)",
+  "validationLogin": "Please enter login",
+  "validationPassword": "Please enter password"
+}

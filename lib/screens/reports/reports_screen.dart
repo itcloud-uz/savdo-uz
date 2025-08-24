@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:savdo_uz/screens/reports/sales_report_screen.dart';
+import 'package:savdo_uz/screens/reports/product_report_screen.dart';
+import 'package:savdo_uz/screens/reports/customer_report_screen.dart';
+import 'package:savdo_uz/screens/reports/employee_report_screen.dart';
+import 'package:savdo_uz/screens/reports/expense_report_screen.dart';
+import 'package:savdo_uz/screens/reports/debt_report_screen.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -33,7 +38,12 @@ class ReportsScreen extends StatelessWidget {
             subtitle: 'Eng ko\'p va kam sotilgan mahsulotlar',
             icon: Icons.inventory_2_outlined,
             onTap: () {
-              // Kelajakda bu ekran ham quriladi
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProductReportScreen(),
+                ),
+              );
             },
           ),
           _buildReportCard(
@@ -42,7 +52,54 @@ class ReportsScreen extends StatelessWidget {
             subtitle: 'Eng faol va eng ko\'p qarz olgan mijozlar',
             icon: Icons.people_outline,
             onTap: () {
-              // Kelajakda bu ekran ham quriladi
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CustomerReportScreen(),
+                ),
+              );
+            },
+          ),
+          _buildReportCard(
+            context,
+            title: 'Xodimlar Hisoboti',
+            subtitle: 'Xodimlar statistikasi va eksport',
+            icon: Icons.badge_outlined,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const EmployeeReportScreen(),
+                ),
+              );
+            },
+          ),
+          _buildReportCard(
+            context,
+            title: 'Xarajatlar Hisoboti',
+            subtitle: 'Xarajatlar statistikasi va eksport',
+            icon: Icons.money_off,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ExpenseReportScreen(),
+                ),
+              );
+            },
+          ),
+          _buildReportCard(
+            context,
+            title: 'Qarzdorlik Hisoboti',
+            subtitle: 'Qarzdorlik statistikasi va eksport',
+            icon: Icons.assignment_late_outlined,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DebtReportScreen(),
+                ),
+              );
             },
           ),
         ],

@@ -1,0 +1,22 @@
+{
+  "appTitle": "Savdo-UZ",
+  "employeeAdd": "Добавить сотрудника",
+  "employeeEdit": "Редактировать сотрудника",
+  "delete": "Удалить",
+  "cancel": "Отмена",
+  "save": "Сохранить",
+  "name": "Имя",
+  "position": "Должность",
+  "phone": "Телефон",
+  "email": "Email (необязательно)",
+  "login": "Логин",
+  "password": "Пароль",
+  "faceScan": "Сканирование лица",
+  "validationName": "Введите имя",
+  "validationPosition": "Введите должность",
+  "validationPhone": "Введите номер телефона",
+  "validationPhoneFormat": "Введите правильный номер телефона (998 XX XXX XX XX)",
+  "validationEmailFormat": "Введите правильный email (например: user@mail.com)",
+  "validationLogin": "Введите логин",
+  "validationPassword": "Введите пароль"
+}

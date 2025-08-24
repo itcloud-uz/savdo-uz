@@ -5,6 +5,7 @@ import 'dart:io';
 import '../../models/employee_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/custom_textfield.dart';
+import 'package:savdo_uz/l10n/app_localizations.dart';
 
 class AddEditEmployeeScreen extends StatefulWidget {
   const AddEditEmployeeScreen({super.key, this.employee});
@@ -15,6 +16,10 @@ class AddEditEmployeeScreen extends StatefulWidget {
 }
 
 class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
+  final _emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}');
+  late TextEditingController _emailController;
+  final _phoneRegex =
+      RegExp(r'^(\+998|998)?[ -]?(\d{2})[ -]?(\d{3})[ -]?(\d{2})[ -]?(\d{2})');
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _positionController;
@@ -37,6 +42,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     _loginController = TextEditingController(text: widget.employee?.login);
     _passwordController =
         TextEditingController(text: widget.employee?.password);
+    _emailController = TextEditingController();
     _existingImageUrl = widget.employee?.imageUrl;
     _faceData = widget.employee?.faceData != null
         ? widget.employee!.faceData.map((e) => e as double).toList()
@@ -143,15 +149,17 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.employee == null ? 'Yangi Xodim' : 'Tahrirlash'),
+        title: Text(
+            widget.employee == null ? l10n.employeeAdd : l10n.employeeEdit),
         actions: [
           if (widget.employee != null)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               onPressed: _isLoading ? null : _deleteEmployee,
-              tooltip: 'O\'chirish',
+              tooltip: l10n.delete,
             ),
         ],
       ),
@@ -182,37 +190,57 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
               const SizedBox(height: 24),
               CustomTextField(
                 controller: _nameController,
-                labelText: 'Ism-sharifi',
+                labelText: l10n.name,
                 validator: (value) =>
-                    value!.trim().isEmpty ? 'Ismni kiriting' : null,
+                    value!.trim().isEmpty ? l10n.validationName : null,
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _positionController,
-                labelText: 'Lavozimi',
+                labelText: l10n.position,
                 validator: (value) =>
-                    value!.trim().isEmpty ? 'Lavozimni kiriting' : null,
+                    value!.trim().isEmpty ? l10n.validationPosition : null,
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _phoneController,
-                labelText: 'Telefon raqami',
+                labelText: l10n.phone,
                 keyboardType: TextInputType.phone,
+                validator: (value) {
+                  final v = value?.trim() ?? '';
+                  if (v.isEmpty) return l10n.validationPhone;
+                  if (!_phoneRegex.hasMatch(v))
+                    return l10n.validationPhoneFormat;
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _emailController,
+                labelText: l10n.email,
+                keyboardType: TextInputType.emailAddress,
+                validator: (value) {
+                  final v = value?.trim() ?? '';
+                  if (v.isNotEmpty && !_emailRegex.hasMatch(v)) {
+                    return l10n.validationEmailFormat;
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _loginController,
-                labelText: 'Login',
+                labelText: l10n.login,
                 validator: (value) =>
-                    value!.trim().isEmpty ? 'Login kiriting' : null,
+                    value!.trim().isEmpty ? l10n.validationLogin : null,
               ),
               const SizedBox(height: 16),
               CustomTextField(
                 controller: _passwordController,
-                labelText: 'Parol',
+                labelText: l10n.password,
                 obscureText: true,
                 validator: (value) =>
-                    value!.trim().isEmpty ? 'Parol kiriting' : null,
+                    value!.trim().isEmpty ? l10n.validationPassword : null,
               ),
               const SizedBox(height: 32),
               _isLoading
@@ -221,7 +249,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _saveEmployee,
-                        child: const Text('Saqlash'),
+                        child: Text(l10n.save),
                       ),
                     ),
             ],

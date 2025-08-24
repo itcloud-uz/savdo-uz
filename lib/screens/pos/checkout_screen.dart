@@ -5,6 +5,9 @@ import 'package:savdo_uz/models/sale_model.dart';
 import 'package:savdo_uz/providers/cart_provider.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/screens/pos/receipt_screen.dart';
+import 'package:savdo_uz/widgets/loader_widget.dart';
+import 'package:savdo_uz/widgets/error_retry_widget.dart';
+import 'package:savdo_uz/widgets/empty_state_widget.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -108,13 +111,25 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               StreamBuilder<List<Customer>>(
                 stream: firestoreService.getCustomers(),
                 builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const LoaderWidget(
+                        message: 'Mijozlar yuklanmoqda...');
+                  }
+                  if (snapshot.hasError) {
+                    return ErrorRetryWidget(
+                      errorMessage: 'Xatolik: ${snapshot.error}',
+                      onRetry: () => setState(() {}),
+                    );
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const EmptyStateWidget(
+                      message: 'Mijozlar mavjud emas.',
+                      icon: Icons.person_off,
+                    );
                   }
                   final customers = snapshot.data!;
                   return DropdownButtonFormField<Customer>(
-                    initialValue:
-                        _selectedCustomer, // 🔥 value o‘rniga initialValue
+                    initialValue: _selectedCustomer,
                     hint: const Text('Mijozni tanlang'),
                     isExpanded: true,
                     items: customers.map((customer) {
@@ -135,7 +150,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             ],
             const SizedBox(height: 32),
             _isLoading
-                ? const CircularProgressIndicator()
+                ? const LoaderWidget(message: 'Sotuv yakunlanmoqda...')
                 : SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

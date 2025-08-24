@@ -12,6 +12,12 @@ import 'package:savdo_uz/models/sale_model.dart';
 
 /// Firestore va Firebase Storage bilan ishlash uchun mas'ul bo'lgan markaziy servis.
 class FirestoreService {
+  // Barcha sotuvlarni olish
+  Future<List<Sale>> getAllSales() async {
+    final snapshot = await _db.collection('sales').get();
+    return snapshot.docs.map((doc) => Sale.fromFirestore(doc)).toList();
+  }
+
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 

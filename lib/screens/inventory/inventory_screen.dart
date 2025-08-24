@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/product_model.dart';
@@ -6,6 +7,9 @@ import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/screens/inventory/add_edit_product_screen.dart';
 import 'package:savdo_uz/widgets/custom_search_bar.dart';
 import 'package:savdo_uz/widgets/loading_list_tile.dart';
+import 'package:savdo_uz/widgets/error_retry_widget.dart';
+import 'package:savdo_uz/widgets/empty_state_widget.dart';
+import 'package:savdo_uz/widgets/accessible_icon_button.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -44,81 +48,113 @@ class _InventoryScreenState extends State<InventoryScreen> {
       appBar: AppBar(
         title: const Text('Omborxona'),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          CustomSearchBar(
-            controller: _searchController,
-            onChanged: (query) =>
-                setState(() => _searchQuery = query.toLowerCase()),
-            hintText: 'Nomi yoki shtrix-kod bo\'yicha...',
+          Positioned.fill(
+            child: Stack(
+              children: [
+                Image.asset(
+                  'assets/images/omborxona.jpg',
+                  fit: BoxFit.cover,
+                ),
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.18),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          Expanded(
-            child: StreamBuilder<List<Product>>(
-              stream: firestoreService.getProducts(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return ListView.builder(
-                      itemCount: 7,
-                      itemBuilder: (ctx, i) => const LoadingListTile());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text('Xatolik: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Mahsulotlar mavjud emas.'));
-                }
+          Column(
+            children: [
+              CustomSearchBar(
+                controller: _searchController,
+                onChanged: (query) =>
+                    setState(() => _searchQuery = query.toLowerCase()),
+                hintText: 'Nomi yoki shtrix-kod bo\'yicha...',
+              ),
+              Expanded(
+                child: StreamBuilder<List<Product>>(
+                  stream: firestoreService.getProducts(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return ListView.builder(
+                          itemCount: 7,
+                          itemBuilder: (ctx, i) => const LoadingListTile());
+                    }
+                    if (snapshot.hasError) {
+                      return ErrorRetryWidget(
+                        errorMessage: 'Xatolik: ${snapshot.error}',
+                        onRetry: () => setState(() {}),
+                      );
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const EmptyStateWidget(
+                        message: 'Mahsulotlar mavjud emas.',
+                        icon: Icons.inventory_2_outlined,
+                      );
+                    }
 
-                final allProducts = snapshot.data!;
-                final filteredProducts = allProducts.where((product) {
-                  final name = product.name.toLowerCase();
-                  final barcode = product.barcode;
-                  return name.contains(_searchQuery) ||
-                      barcode.contains(_searchQuery);
-                }).toList();
+                    final allProducts = snapshot.data!;
+                    final filteredProducts = allProducts.where((product) {
+                      final name = product.name.toLowerCase();
+                      final barcode = product.barcode;
+                      return name.contains(_searchQuery) ||
+                          barcode.contains(_searchQuery);
+                    }).toList();
 
-                if (filteredProducts.isEmpty) {
-                  return const Center(
-                      child: Text('Qidiruv natijasi topilmadi.'));
-                }
+                    if (filteredProducts.isEmpty) {
+                      return const EmptyStateWidget(
+                        message: 'Qidiruv natijasi topilmadi.',
+                        icon: Icons.search_off,
+                      );
+                    }
 
-                return ListView.builder(
-                  itemCount: filteredProducts.length,
-                  itemBuilder: (context, index) {
-                    final product = filteredProducts[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
-                      child: ListTile(
-                        title: Text(product.name,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Shtrix-kod: ${product.barcode}'),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(currencyFormatter.format(product.price)),
-                            Text('${product.quantity} dona'),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddEditProductScreen(product: product),
-                              ));
-                        },
-                      ),
+                    return ListView.builder(
+                      itemCount: filteredProducts.length,
+                      itemBuilder: (context, index) {
+                        final product = filteredProducts[index];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 6),
+                          child: ListTile(
+                            title: Text(product.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            subtitle: Text('Shtrix-kod: ${product.barcode}'),
+                            trailing: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(currencyFormatter.format(product.price)),
+                                Text('${product.quantity} dona'),
+                              ],
+                            ),
+                            onTap: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        AddEditProductScreen(product: product),
+                                  ));
+                            },
+                          ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AccessibleIconButton(
+        icon: Icons.add,
+        semanticLabel: 'Mahsulot qo‘shish',
         onPressed: () {
           Navigator.push(
               context,
@@ -126,7 +162,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 builder: (context) => const AddEditProductScreen(),
               ));
         },
-        child: const Icon(Icons.add),
+        color: Colors.white,
+        size: 28,
       ),
     );
   }

@@ -45,7 +45,6 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   }
 
   Future<void> _scanBarcode() async {
-    final ctx = context;
     try {
       String barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           '#ff6666', 'Bekor qilish', true, ScanMode.BARCODE);
@@ -59,7 +58,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(ctx).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Skanerlashda xatolik: $e')),
       );
     }
@@ -71,8 +70,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         _isLoading = true;
       });
 
-      final ctx = context;
-      final firestoreService = ctx.read<FirestoreService>();
+      final firestoreService = context.read<FirestoreService>();
 
       try {
         final product = Product(
@@ -90,11 +88,11 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         }
 
         if (mounted) {
-          Navigator.pop(ctx);
+          Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(ctx)
+          ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text("Xatolik: $e")));
         }
       } finally {
@@ -110,21 +108,20 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
   Future<void> _deleteProduct() async {
     if (widget.product == null) return;
 
-    final ctx = context;
     final shouldDelete = await showDialog<bool>(
-      context: ctx,
+      context: context,
       builder: (context) => AlertDialog(
         title: const Text('O\'chirishni tasdiqlang'),
         content: Text(
             '${widget.product!.name} nomli mahsulotni o\'chirishga ishonchingiz komilmi?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Bekor qilish'),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () => Navigator.pop(ctx, true),
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('O\'chirish'),
           ),
         ],
@@ -136,15 +133,15 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
         _isLoading = true;
       });
       try {
-        final firestoreService = ctx.read<FirestoreService>();
+        final firestoreService = context.read<FirestoreService>();
         await firestoreService.deleteProduct(widget.product!.id!);
 
         if (mounted) {
-          Navigator.pop(ctx);
+          Navigator.pop(context);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(ctx)
+          ScaffoldMessenger.of(context)
               .showSnackBar(SnackBar(content: Text("Xatolik: $e")));
         }
       } finally {

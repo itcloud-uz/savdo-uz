@@ -1,0 +1,22 @@
+{
+  "appTitle": "Savdo-UZ",
+  "employeeAdd": "Xodim qo‘shish",
+  "employeeEdit": "Xodimni tahrirlash",
+  "delete": "O‘chirish",
+  "cancel": "Bekor qilish",
+  "save": "Saqlash",
+  "name": "Ism-sharifi",
+  "position": "Lavozimi",
+  "phone": "Telefon raqami",
+  "email": "Email (ixtiyoriy)",
+  "login": "Login",
+  "password": "Parol",
+  "faceScan": "Yuzni skanerlash",
+  "validationName": "Ismni kiriting",
+  "validationPosition": "Lavozimni kiriting",
+  "validationPhone": "Telefon raqamini kiriting",
+  "validationPhoneFormat": "To‘g‘ri telefon raqamini kiriting (998 XX XXX XX XX)",
+  "validationEmailFormat": "To‘g‘ri email kiriting (misol: user@mail.com)",
+  "validationLogin": "Login kiriting",
+  "validationPassword": "Parol kiriting"
+}

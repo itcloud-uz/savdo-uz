@@ -7,6 +7,9 @@ import 'package:savdo_uz/screens/expenses/add_edit_expense_screen.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/widgets/custom_search_bar.dart';
 import 'package:savdo_uz/widgets/loading_list_tile.dart';
+import 'package:savdo_uz/widgets/error_retry_widget.dart';
+import 'package:savdo_uz/widgets/empty_state_widget.dart';
+import 'package:savdo_uz/widgets/accessible_icon_button.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -69,23 +72,30 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   );
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Xatolik: ${snapshot.error}'));
+                  return ErrorRetryWidget(
+                    errorMessage: 'Xatolik: ${snapshot.error}',
+                    onRetry: () => setState(() {}),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('Xarajatlar mavjud emas.'));
+                  return const EmptyStateWidget(
+                    message: 'Xarajatlar mavjud emas.',
+                    icon: Icons.receipt_long_outlined,
+                  );
                 }
 
                 final allExpenses = snapshot.data!;
                 final filteredExpenses = allExpenses.where((expense) {
-                  // XATOLIK TUZATILDI: `description` null bo'lmasligiga ishonch hosil qilindi.
                   return (expense.description)
                       .toLowerCase()
                       .contains(_searchQuery);
                 }).toList();
 
                 if (filteredExpenses.isEmpty) {
-                  return const Center(
-                      child: Text('Qidiruv natijasi topilmadi.'));
+                  return const EmptyStateWidget(
+                    message: 'Qidiruv natijasi topilmadi.',
+                    icon: Icons.search_off,
+                  );
                 }
 
                 return ListView.builder(
@@ -128,7 +138,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AccessibleIconButton(
+        icon: Icons.add,
+        semanticLabel: 'Yangi xarajat qo‘shish',
         onPressed: () {
           Navigator.push(
             context,
@@ -137,8 +149,8 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ),
           );
         },
-        tooltip: 'Yangi xarajat qo\'shish',
-        child: const Icon(Icons.add),
+        color: Colors.white,
+        size: 28,
       ),
     );
   }

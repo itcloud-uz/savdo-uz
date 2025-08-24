@@ -2,54 +2,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ---- Yordamchi Funksiyalar ----
-    // Foydalanuvchi tizimga kirganligini tekshiradi
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Foydalanuvchining rolini 'employees' kolleksiyasidan oladi
-    // Bu funksiya ishlashi uchun 'employees'dagi hujjat ID'si foydalanuvchi UID'siga teng bo'lishi SHART!
-    function getUserRole(uid) {
-      return get(/databases/$(database)/documents/employees/$(uid)).data.role;
-    }
-
-    // Foydalanuvchi Admin ekanligini tekshiradi
-    function isAdmin() {
-      return isSignedIn() && getUserRole(request.auth.uid) == 'Admin';
-    }
-
-    // Foydalanuvchi Sotuvchi ekanligini tekshiradi
-    function isSeller() {
-      return isSignedIn() && getUserRole(request.auth.uid) == 'Sotuvchi';
-    }
-    
-    // Foydalanuvchi Omborchi ekanligini tekshiradi
-    function isWarehouseKeeper() {
-        return isSignedIn() && getUserRole(request.auth.uid) == 'Omborchi';
-    }
-
-    // ---- Asosiy Qoidalar ----
-
-    // "employees" kolleksiyasi uchun qoidalar
-    match /employees/{userId} {
-      // Admin barcha xodimlarni ko'ra oladi.
-      // Oddiy xodim faqat o'zining ma'lumotlarini ko'ra oladi.
-      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
-      
-      // Faqat Admin yangi xodim qo'shishi, o'zgartirishi yoki o'chirishi mumkin.
-      allow write: if isAdmin();
-    }
-
-    // "products", "sales", "stock" va boshqa barcha kolleksiyalar uchun qoidalar
-    // Hozircha Admin hamma narsani qila oladi, qolganlar faqat o'qiy oladi
-    // Buni keyinchalik yanada aniqlashtiramiz
     match /{document=**} {
-        allow read: if isSignedIn();
-        allow write: if isAdmin();
+      allow read, write: if true;
     }
-
-    // Yuqoridagi qoidaga tushmagan har qanday so'rov rad etiladi.
   }
 }

@@ -9,19 +9,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
-  # Firebase (So'nggi barqaror versiyalar)
+  # Firebase (So'nggi barqaror va Windows bilan mos versiyalar)
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.1
   cloud_firestore: ^6.0.0
-  firebase_storage: ^13.0.0 # Yangilandi
-  flutter_barcode_scanner: ^2.0.0
-  simple_animations: ^5.0.2 
+  firebase_storage: ^13.0.0
+  firebase_messaging: ^16.0.0
 
-  # State Management
   provider: ^6.1.2
 
-  # Machine Learning (YANGILANGAN VA MOSLASHTIRILGAN VERSIYALAR)
   camera: ^0.11.2
   camera_windows: ^0.2.6+2
   google_mlkit_face_detection: ^0.13.1
@@ -29,30 +29,35 @@ dependencies:
   image: ^4.1.7
   google_mlkit_commons: ^0.11.0
 
-  # UI & Utility
   cupertino_icons: ^1.0.6
   google_fonts: ^6.2.1
-  mobile_scanner: ^7.0.1 # Asosiy skaner sifatida qoldirildi
-  intl: ^0.20.2
+  mobile_scanner: ^7.0.1
   fl_chart: ^1.0.0
   path_provider: ^2.1.2
   image_picker: ^1.1.2
   pdf: ^3.11.0
-  printing: ^5.12.0
-  cached_network_image: ^3.3.1
+  printing: ^5.14.2
+  cached_network_image: ^3.4.1
   qr_flutter: ^4.1.0
-  
-  # flutter_barcode_scanner olib tashlandi, chunki mobile_scanner ishlatilmoqda
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  excel: ^4.0.6
+  share_plus: ^11.1.0
+  flutter_barcode_scanner: ^2.0.0
+  simple_animations: ^5.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  hive_generator: ^2.0.1
 
 flutter:
   uses-material-design: true
+  generate: true
   assets:
-    - assets/images/
     - assets/ml/
     - assets/ml/mobile_face_net.tflite
+    - assets/images/
     - assets/images/kirish_orqafoni.jpg

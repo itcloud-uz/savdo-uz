@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 // Bu model fayli mavjudligiga ishonch hosil qiling (`lib/models/menu_item_model.dart`)
 import 'package:savdo_uz/models/menu_item_model.dart';
 import 'package:savdo_uz/screens/customer/customers_screen.dart';
@@ -88,11 +89,23 @@ class _MainScreenState extends State<MainScreen> {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          // Orqafon rasmi
+          // Menyular uchun orqafon rasmi va shisha/blur effekt
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/kirish_orqafon.jpg',
-              fit: BoxFit.cover,
+            child: Stack(
+              children: [
+                Image.asset(
+                  'assets/images/Menyular_orqafoni.jpg',
+                  fit: BoxFit.cover,
+                ),
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.18),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           // Shaffof effekt

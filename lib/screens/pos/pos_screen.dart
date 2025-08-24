@@ -5,6 +5,7 @@ import 'package:savdo_uz/providers/cart_provider.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:savdo_uz/screens/pos/checkout_screen.dart';
+import 'package:savdo_uz/widgets/empty_state_widget.dart';
 
 class POSScreen extends StatelessWidget {
   const POSScreen({super.key});
@@ -78,11 +79,10 @@ class POSScreen extends StatelessWidget {
         children: [
           Expanded(
             child: cart.items.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Savat bo\'sh.\nMahsulot qo\'shish uchun skanerlang.',
-                      textAlign: TextAlign.center,
-                    ),
+                ? const EmptyStateWidget(
+                    message:
+                        'Savat bo\'sh. Mahsulot qo\'shish uchun skanerlang.',
+                    icon: Icons.shopping_cart_outlined,
                   )
                 : ListView.builder(
                     itemCount: cart.items.length,

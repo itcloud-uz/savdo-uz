@@ -4,7 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/customer_model.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:savdo_uz/screens/customer/add_edit_customer_screen.dart';
-import 'package:savdo_uz/widgets/custom_search_bar.dart'; // <-- YANGI IMPORT
+import 'package:savdo_uz/widgets/custom_search_bar.dart';
+import 'package:savdo_uz/widgets/error_retry_widget.dart';
+import 'package:savdo_uz/widgets/empty_state_widget.dart';
+import 'package:savdo_uz/widgets/accessible_icon_button.dart';
+import 'package:savdo_uz/widgets/loading_list_tile.dart';
 
 class CustomersScreen extends StatefulWidget {
   const CustomersScreen({super.key});
@@ -59,10 +63,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
               stream: firestoreService.getCustomers(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return ListView.builder(
+                    itemCount: 5,
+                    itemBuilder: (ctx, i) => const LoadingListTile(),
+                  );
                 }
                 if (snapshot.hasError) {
-                  return Center(child: Text('Xatolik: ${snapshot.error}'));
+                  return ErrorRetryWidget(
+                    errorMessage: 'Xatolik: ${snapshot.error}',
+                    onRetry: () => setState(() {}),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Center(child: Text('Mijozlar mavjud emas.'));
@@ -78,8 +88,10 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 }).toList();
 
                 if (filteredCustomers.isEmpty) {
-                  return const Center(
-                      child: Text('Qidiruv natijasi topilmadi.'));
+                  return const EmptyStateWidget(
+                    message: 'Qidiruv natijasi topilmadi.',
+                    icon: Icons.search_off,
+                  );
                 }
 
                 return ListView.builder(
@@ -123,7 +135,9 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: AccessibleIconButton(
+        icon: Icons.add,
+        semanticLabel: 'Mijoz qo‘shish',
         onPressed: () {
           Navigator.push(
               context,
@@ -131,7 +145,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 builder: (context) => const AddEditCustomerScreen(),
               ));
         },
-        child: const Icon(Icons.add),
+        color: Colors.white,
+        size: 28,
       ),
     );
   }

@@ -1,0 +1,22 @@
+{
+  "appTitle": "Savdo-UZ",
+  "employeeAdd": "Çalışan Ekle",
+  "employeeEdit": "Çalışanı Düzenle",
+  "delete": "Sil",
+  "cancel": "İptal",
+  "save": "Kaydet",
+  "name": "Adı Soyadı",
+  "position": "Pozisyonu",
+  "phone": "Telefon Numarası",
+  "email": "Email (isteğe bağlı)",
+  "login": "Giriş",
+  "password": "Şifre",
+  "faceScan": "Yüz Tarama",
+  "validationName": "Adı girin",
+  "validationPosition": "Pozisyonu girin",
+  "validationPhone": "Telefon numarasını girin",
+  "validationPhoneFormat": "Geçerli bir telefon numarası girin (998 XX XXX XX XX)",
+  "validationEmailFormat": "Geçerli bir email girin (ör: user@mail.com)",
+  "validationLogin": "Giriş girin",
+  "validationPassword": "Şifre girin"
+}
