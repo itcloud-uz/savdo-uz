@@ -104,19 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Icon(Icons.storefront_outlined,
                           size: 56, color: Theme.of(context).primaryColor),
                       const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.verified_user, size: 24),
-                        label: const Text('Yuz orqali kirish'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade600,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          elevation: 3,
-                        ),
-                        onPressed: _faceLogin,
-                      ),
+                      // Matnlar yuqorida
                       Text('Tizimga xush kelibsiz!',
                           textAlign: TextAlign.center,
                           style:
@@ -136,7 +124,59 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ? Colors.white70
                                         : Colors.black87,
                                   )),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 18),
+                      // Face ID va yuz tanish tugmalari
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.face, size: 24),
+                              label: const Text('Face ID'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue.shade600,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 3,
+                                textStyle: const TextStyle(fontSize: 15),
+                              ),
+                              onPressed: _faceLogin,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              icon: const Icon(
+                                  Icons.face_retouching_natural_outlined,
+                                  size: 24),
+                              label: const Text('Yuzni tanish'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.blue.shade600,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                elevation: 3,
+                                side: BorderSide(
+                                    color: Colors.blue.shade600, width: 1.5),
+                                textStyle: const TextStyle(fontSize: 15),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const FaceScanScreen()),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
                       TextFormField(
                           controller: _loginController,
                           style: const TextStyle(fontSize: 14),
@@ -179,35 +219,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: const Text('Kirish'),
                             ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: const [
-                          Expanded(child: Divider()),
-                          Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Text('yoki',
-                                  style: TextStyle(
-                                      color: Colors.grey, fontSize: 13))),
-                          Expanded(child: Divider())
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      OutlinedButton.icon(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const FaceScanScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.face_retouching_natural_outlined,
-                            size: 20),
-                        label: const Text('Yuz orqali skanerlash',
-                            style: TextStyle(fontSize: 14)),
-                        style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8))),
-                      ),
                     ],
                   ),
                 ),

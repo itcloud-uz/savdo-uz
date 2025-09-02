@@ -12,6 +12,29 @@ import 'package:savdo_uz/models/sale_model.dart';
 
 /// Firestore va Firebase Storage bilan ishlash uchun mas'ul bo'lgan markaziy servis.
 class FirestoreService {
+  // Mahsulotni ID yoki nomi bo‘yicha qidirish
+  Future<List<Product>> searchProduct(String query) async {
+    if (query.isEmpty) return [];
+    final snapshot = await _db
+        .collection('products')
+        .where('name', isGreaterThanOrEqualTo: query)
+        .where('name', isLessThanOrEqualTo: query + '\uf8ff')
+        .get();
+    final byName =
+        snapshot.docs.map((doc) => Product.fromFirestore(doc)).toList();
+
+    // ID bo‘yicha qidirish
+    final byIdSnap =
+        await _db.collection('products').where('id', isEqualTo: query).get();
+    final byId =
+        byIdSnap.docs.map((doc) => Product.fromFirestore(doc)).toList();
+
+    // Natijalarni birlashtirish va dublikatlarni olib tashlash
+    final all = [...byName, ...byId];
+    final unique = {for (var p in all) p.id: p}.values.toList();
+    return unique;
+  }
+
   // Barcha sotuvlarni olish
   Future<List<Sale>> getAllSales() async {
     final snapshot = await _db.collection('sales').get();

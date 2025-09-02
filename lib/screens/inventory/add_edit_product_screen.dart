@@ -78,7 +78,7 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
           name: _nameController.text.trim(),
           barcode: _barcodeController.text.trim(),
           price: double.tryParse(_priceController.text) ?? 0.0,
-          quantity: int.tryParse(_quantityController.text) ?? 0,
+          quantity: double.tryParse(_quantityController.text) ?? 0.0,
         );
 
         if (widget.product == null) {

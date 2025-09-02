@@ -68,19 +68,22 @@ Future<void> main() async {
         ChangeNotifierProvider<CartProvider>(create: (_) => CartProvider()),
         ChangeNotifierProvider<LocaleProvider>(create: (_) => LocaleProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MyApp extends StatefulWidget {
+  MyApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Mavzu (theme) provider'ini olish
-    final themeProvider = Provider.of<ThemeProvider>(context);
+  State<MyApp> createState() => _MyAppState();
+}
 
+class _MyAppState extends State<MyApp> {
+  @override
+  Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
     final localeProvider = Provider.of<LocaleProvider>(context);
     return MaterialApp(
       title: 'Savdo-UZ',

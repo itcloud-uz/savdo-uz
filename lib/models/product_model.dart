@@ -6,7 +6,8 @@ class Product {
   final String name;
   final String barcode;
   final double price;
-  final int quantity;
+  final double quantity;
+  final String unit;
 
   Product({
     this.id,
@@ -14,6 +15,7 @@ class Product {
     required this.barcode,
     required this.price,
     required this.quantity,
+    this.unit = "dona",
   });
 
   factory Product.fromFirestore(DocumentSnapshot doc) {
@@ -23,7 +25,8 @@ class Product {
       name: data['name'] ?? '',
       barcode: data['barcode'] ?? '',
       price: (data['price'] ?? 0.0).toDouble(),
-      quantity: data['quantity'] ?? 0,
+      quantity: (data['quantity'] ?? 0).toDouble(),
+      unit: data['unit'] ?? "dona",
     );
   }
 
@@ -33,6 +36,7 @@ class Product {
       'barcode': barcode,
       'price': price,
       'quantity': quantity,
+      'unit': unit,
     };
   }
 }

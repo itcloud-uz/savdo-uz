@@ -20,13 +20,13 @@ class POSScreen extends StatelessWidget {
       );
 
       if (barcodeScanRes != '-1') {
-        if (!context.mounted) return; // ✅ context tekshiruvi qo‘shildi
+        if (!context.mounted) return;
 
         final firestoreService = context.read<FirestoreService>();
         final product =
             await firestoreService.getProductByBarcode(barcodeScanRes);
 
-        if (!context.mounted) return; // ✅ yana tekshiruvi
+        if (!context.mounted) return;
 
         if (product != null) {
           if (product.quantity > 0) {
@@ -45,7 +45,7 @@ class POSScreen extends StatelessWidget {
         }
       }
     } catch (e) {
-      if (!context.mounted) return; // ✅ xatolikda ham tekshirildi
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Skanerlashda xatolik: $e')),
       );
@@ -56,12 +56,22 @@ class POSScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cart = context.watch<CartProvider>();
     final currencyFormatter = NumberFormat.currency(
-        locale: 'uz_UZ', symbol: 'so\'m', decimalDigits: 0);
+        locale: 'uz_UZ', symbol: "so'm", decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kassa (POS)'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Mahsulot qidirish',
+            onPressed: () async {
+              await showDialog(
+                context: context,
+                builder: (ctx) => const ProductSearchDialog(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
             onPressed: () => _scanBarcode(context),
@@ -81,7 +91,7 @@ class POSScreen extends StatelessWidget {
             child: cart.items.isEmpty
                 ? const EmptyStateWidget(
                     message:
-                        'Savat bo\'sh. Mahsulot qo\'shish uchun skanerlang.',
+                        "Savat bo'sh. Mahsulot qo'shish uchun skanerlang.",
                     icon: Icons.shopping_cart_outlined,
                   )
                 : ListView.builder(
@@ -98,7 +108,7 @@ class POSScreen extends StatelessWidget {
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         onTap: () {
-                          // Mahsulot sonini o'zgartirish yoki o'chirish uchun dialog
+                          // Mahsulot sonini o'zgartirish yoki o'chirish uchun dialog qo'shishingiz mumkin
                         },
                       );
                     },
@@ -119,8 +129,7 @@ class POSScreen extends StatelessWidget {
         color: Theme.of(context).cardColor,
         boxShadow: [
           BoxShadow(
-            color: Colors.black
-                .withValues(alpha: 0.1), // ✅ withOpacity → withValues
+            color: Colors.black.withOpacity(0.1), // ✅ withValues → withOpacity
             spreadRadius: 0,
             blurRadius: 10,
           ),
@@ -153,11 +162,95 @@ class POSScreen extends StatelessWidget {
                   ),
                 );
               },
-              child: const Text('To\'lov'),
+              child: const Text("To'lov"),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+// --- Mahsulot qidirish va qo'shish dialogi ---
+class ProductSearchDialog extends StatefulWidget {
+  const ProductSearchDialog({super.key});
+
+  @override
+  State<ProductSearchDialog> createState() => _ProductSearchDialogState();
+}
+
+class _ProductSearchDialogState extends State<ProductSearchDialog> {
+  final _searchController = TextEditingController();
+  List products = [];
+  bool _isLoading = false;
+  String _error = '';
+
+  Future<void> _searchProduct() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+    final query = _searchController.text.trim();
+    try {
+      final firestoreService = context.read<FirestoreService>();
+      products = await firestoreService.searchProduct(query);
+    } catch (e) {
+      _error = 'Xatolik: $e';
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Mahsulot qidirish yoki qo'shish"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              labelText: 'ID yoki nomi',
+              suffixIcon: Icon(Icons.search),
+            ),
+            onSubmitted: (_) => _searchProduct(),
+          ),
+          const SizedBox(height: 12),
+          if (_isLoading) const CircularProgressIndicator(),
+          if (_error.isNotEmpty)
+            Text(_error, style: const TextStyle(color: Colors.red)),
+          if (products.isNotEmpty)
+            SizedBox(
+              height: 180,
+              child: ListView.builder(
+                itemCount: products.length,
+                itemBuilder: (ctx, i) {
+                  final p = products[i];
+                  return ListTile(
+                    title: Text(p.name),
+                    subtitle: Text('ID: ${p.id}'),
+                    trailing: ElevatedButton(
+                      child: const Text("Qo'shish"),
+                      onPressed: () {
+                        context.read<CartProvider>().addItem(p);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          child: const Text('Yopish'),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 }

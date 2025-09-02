@@ -6,6 +6,11 @@ import 'app_localizations.dart';
 
 /// The translations for Russian (`ru`).
 class AppLocalizationsRu extends AppLocalizations {
+  @override
+  String get role => 'Должность';
+
+  @override
+  String get validationRole => 'Введите должность';
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
@@ -57,10 +62,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get validationPhone => 'Введите номер телефона';
 
   @override
-  String get validationPhoneFormat => 'Введите правильный номер телефона (998 XX XXX XX XX)';
+  String get validationPhoneFormat =>
+      'Введите правильный номер телефона (998 XX XXX XX XX)';
 
   @override
-  String get validationEmailFormat => 'Введите правильный email (например: user@mail.com)';
+  String get validationEmailFormat =>
+      'Введите правильный email (например: user@mail.com)';
 
   @override
   String get validationLogin => 'Введите логин';

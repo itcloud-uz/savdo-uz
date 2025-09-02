@@ -130,7 +130,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
                                 Text(currencyFormatter.format(product.price)),
-                                Text('${product.quantity} dona'),
+                                Text(
+                                    '${product.quantity.toStringAsFixed(2)} ${product.unit ?? "dona"}'),
                               ],
                             ),
                             onTap: () {

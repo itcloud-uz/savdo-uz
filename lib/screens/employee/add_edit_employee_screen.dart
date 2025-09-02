@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:io';
+import 'dart:ui';
 import '../../models/employee_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/custom_textfield.dart';
@@ -16,13 +17,27 @@ class AddEditEmployeeScreen extends StatefulWidget {
 }
 
 class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
+  Widget _buildAvatarChild() {
+    if (_isLoading) {
+      return const CircularProgressIndicator();
+    }
+    if (_faceData != null) {
+      return const Icon(Icons.check_circle, size: 40, color: Colors.green);
+    }
+    if (_selectedImage == null &&
+        (_existingImageUrl == null || _existingImageUrl!.isEmpty)) {
+      return const Icon(Icons.camera_alt, size: 40, color: Colors.grey);
+    }
+    return const SizedBox.shrink();
+  }
+
   final _emailRegex = RegExp(r'^[\w\.-]+@[\w\.-]+\.[a-zA-Z]{2,}');
   late TextEditingController _emailController;
   final _phoneRegex =
       RegExp(r'^(\+998|998)?[ -]?(\d{2})[ -]?(\d{3})[ -]?(\d{2})[ -]?(\d{2})');
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _positionController;
+  late TextEditingController _roleController;
   late TextEditingController _phoneController;
   late TextEditingController _loginController;
   late TextEditingController _passwordController;
@@ -36,17 +51,13 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.employee?.name);
-    _positionController =
-        TextEditingController(text: widget.employee?.position);
+    _roleController = TextEditingController(text: widget.employee?.role);
     _phoneController = TextEditingController(text: widget.employee?.phone);
     _loginController = TextEditingController(text: widget.employee?.login);
     _passwordController =
         TextEditingController(text: widget.employee?.password);
     _emailController = TextEditingController();
     _existingImageUrl = widget.employee?.imageUrl;
-    _faceData = widget.employee?.faceData != null
-        ? widget.employee!.faceData.map((e) => e as double).toList()
-        : null;
   }
 
   Future<void> _pickAndRegisterFace() async {}
@@ -54,7 +65,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _positionController.dispose();
+    _roleController.dispose();
     _phoneController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
@@ -81,7 +92,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
         final employee = Employee(
           id: widget.employee?.id,
           name: _nameController.text.trim(),
-          position: _positionController.text.trim(),
+          role: _roleController.text.trim(),
           phone: _phoneController.text.trim(),
           login: _loginController.text.trim(),
           password: _passwordController.text.trim(),
@@ -147,6 +158,32 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     }
   }
 
+  Widget _buildImagePickerSheet(BuildContext ctx) {
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Galereyadan tanlash'),
+            onTap: () async {
+              // TODO: Implement gallery picker
+              Navigator.pop(ctx, null);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Kamera orqali'),
+            onTap: () async {
+              // TODO: Implement camera picker
+              Navigator.pop(ctx, null);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -163,113 +200,175 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              GestureDetector(
-                onTap: _pickAndRegisterFace,
-                child: CircleAvatar(
-                  radius: 60,
-                  backgroundColor: _faceData != null
-                      ? Colors.green.shade100
-                      : Colors.grey.shade200,
-                  backgroundImage: _selectedImage != null
-                      ? FileImage(_selectedImage!)
-                      : (_existingImageUrl != null &&
-                              _existingImageUrl!.isNotEmpty)
-                          ? CachedNetworkImageProvider(_existingImageUrl!)
-                          : null as ImageProvider?,
-                  child: _buildAvatarChild(),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Stack(
+              children: [
+                Image.asset(
+                  'assets/images/Menyular_orqafoni.jpg',
+                  fit: BoxFit.cover,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(_statusMessage),
-              const SizedBox(height: 24),
-              CustomTextField(
-                controller: _nameController,
-                labelText: l10n.name,
-                validator: (value) =>
-                    value!.trim().isEmpty ? l10n.validationName : null,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _positionController,
-                labelText: l10n.position,
-                validator: (value) =>
-                    value!.trim().isEmpty ? l10n.validationPosition : null,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _phoneController,
-                labelText: l10n.phone,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isEmpty) return l10n.validationPhone;
-                  if (!_phoneRegex.hasMatch(v))
-                    return l10n.validationPhoneFormat;
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _emailController,
-                labelText: l10n.email,
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  final v = value?.trim() ?? '';
-                  if (v.isNotEmpty && !_emailRegex.hasMatch(v)) {
-                    return l10n.validationEmailFormat;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _loginController,
-                labelText: l10n.login,
-                validator: (value) =>
-                    value!.trim().isEmpty ? l10n.validationLogin : null,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _passwordController,
-                labelText: l10n.password,
-                obscureText: true,
-                validator: (value) =>
-                    value!.trim().isEmpty ? l10n.validationPassword : null,
-              ),
-              const SizedBox(height: 32),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveEmployee,
-                        child: Text(l10n.save),
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.18),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Card(
+                  color: Colors.white.withOpacity(0.78),
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 22, horizontal: 18),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              final picked = await showModalBottomSheet<File?>(
+                                context: context,
+                                builder: (ctx) => _buildImagePickerSheet(ctx),
+                              );
+                              if (picked != null) {
+                                setState(() {
+                                  _selectedImage = picked;
+                                  _statusMessage = 'Rasm tanlandi.';
+                                });
+                              } else {
+                                setState(() {
+                                  _statusMessage = '';
+                                });
+                              }
+                            },
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: _faceData != null
+                                  ? Colors.green.shade100
+                                  : Colors.grey.shade200,
+                              backgroundImage: _selectedImage != null
+                                  ? FileImage(_selectedImage!)
+                                  : (_existingImageUrl != null &&
+                                          _existingImageUrl!.isNotEmpty)
+                                      ? CachedNetworkImageProvider(
+                                              _existingImageUrl!)
+                                          as ImageProvider<Object>
+                                      : null,
+                              child: _buildAvatarChild(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.face_retouching_natural),
+                            label: const Text('Yuzni ro‘yxatdan o‘tkazish'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade100,
+                              foregroundColor: Colors.blue.shade900,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                            ),
+                            onPressed: _pickAndRegisterFace,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(_statusMessage,
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.black87)),
+                          const SizedBox(height: 18),
+                          CustomTextField(
+                            controller: _nameController,
+                            labelText: l10n.name,
+                            validator: (value) => value!.trim().isEmpty
+                                ? l10n.validationName
+                                : null,
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _roleController,
+                            labelText: l10n.role,
+                            validator: (value) => value!.trim().isEmpty
+                                ? l10n.validationRole
+                                : null,
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _phoneController,
+                            labelText: l10n.phone,
+                            keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              final v = value?.trim() ?? '';
+                              if (v.isEmpty) return l10n.validationPhone;
+                              if (!_phoneRegex.hasMatch(v))
+                                return l10n.validationPhoneFormat;
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _emailController,
+                            labelText: l10n.email,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              final v = value?.trim() ?? '';
+                              if (v.isNotEmpty && !_emailRegex.hasMatch(v)) {
+                                return l10n.validationEmailFormat;
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _loginController,
+                            labelText: l10n.login,
+                            validator: (value) => value!.trim().isEmpty
+                                ? l10n.validationLogin
+                                : null,
+                          ),
+                          const SizedBox(height: 14),
+                          CustomTextField(
+                            controller: _passwordController,
+                            labelText: l10n.password,
+                            obscureText: true,
+                            validator: (value) => value!.trim().isEmpty
+                                ? l10n.validationPassword
+                                : null,
+                          ),
+                          const SizedBox(height: 24),
+                          _isLoading
+                              ? const CircularProgressIndicator()
+                              : SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.save),
+                                    label: Text(l10n.save),
+                                    onPressed: _saveEmployee,
+                                  ),
+                                ),
+                        ],
                       ),
                     ),
-            ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
-  }
-
-  Widget _buildAvatarChild() {
-    if (_isLoading) {
-      return const CircularProgressIndicator();
-    }
-    if (_faceData != null) {
-      return const Icon(Icons.check_circle, size: 40, color: Colors.green);
-    }
-    if (_selectedImage == null &&
-        (_existingImageUrl == null || _existingImageUrl!.isEmpty)) {
-      return const Icon(Icons.camera_alt, size: 40, color: Colors.grey);
-    }
-    return const SizedBox.shrink();
   }
 }

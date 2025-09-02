@@ -34,7 +34,7 @@ class ReceiptScreen extends StatelessWidget {
             const SizedBox(height: 24),
             QrImageView(
               data:
-                  'Chek ID: ${sale.saleId}\nSana: ${sale.timestamp}\nSumma: ${sale.totalAmount}',
+                  'Chek ID: ${sale.saleId}\nSana: ${sale.timestamp}\nSumma: ${sale.totalAmount}\n---\nKompaniya: IT Cloud\nManzil: Urgut Shahri\nTel: +998 91 187 37 30\nEmail: itclouduz@gmail.com',
               version: QrVersions.auto,
               size: 150.0,
             ),

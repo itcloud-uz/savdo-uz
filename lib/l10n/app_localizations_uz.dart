@@ -6,6 +6,11 @@ import 'app_localizations.dart';
 
 /// The translations for Uzbek (`uz`).
 class AppLocalizationsUz extends AppLocalizations {
+  @override
+  String get role => 'Lavozimi';
+
+  @override
+  String get validationRole => 'Lavozimni kiriting';
   AppLocalizationsUz([String locale = 'uz']) : super(locale);
 
   @override
@@ -57,10 +62,12 @@ class AppLocalizationsUz extends AppLocalizations {
   String get validationPhone => 'Telefon raqamini kiriting';
 
   @override
-  String get validationPhoneFormat => 'To‘g‘ri telefon raqamini kiriting (998 XX XXX XX XX)';
+  String get validationPhoneFormat =>
+      'To‘g‘ri telefon raqamini kiriting (998 XX XXX XX XX)';
 
   @override
-  String get validationEmailFormat => 'To‘g‘ri email kiriting (misol: user@mail.com)';
+  String get validationEmailFormat =>
+      'To‘g‘ri email kiriting (misol: user@mail.com)';
 
   @override
   String get validationLogin => 'Login kiriting';

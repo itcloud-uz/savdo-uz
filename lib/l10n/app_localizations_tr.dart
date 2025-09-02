@@ -6,6 +6,11 @@ import 'app_localizations.dart';
 
 /// The translations for Turkish (`tr`).
 class AppLocalizationsTr extends AppLocalizations {
+  @override
+  String get role => 'Pozisyonu';
+
+  @override
+  String get validationRole => 'Pozisyonu girin';
   AppLocalizationsTr([String locale = 'tr']) : super(locale);
 
   @override
@@ -57,10 +62,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get validationPhone => 'Telefon numarasını girin';
 
   @override
-  String get validationPhoneFormat => 'Geçerli bir telefon numarası girin (998 XX XXX XX XX)';
+  String get validationPhoneFormat =>
+      'Geçerli bir telefon numarası girin (998 XX XXX XX XX)';
 
   @override
-  String get validationEmailFormat => 'Geçerli bir email girin (ör: user@mail.com)';
+  String get validationEmailFormat =>
+      'Geçerli bir email girin (ör: user@mail.com)';
 
   @override
   String get validationLogin => 'Giriş girin';

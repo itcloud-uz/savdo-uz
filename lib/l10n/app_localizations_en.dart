@@ -6,6 +6,11 @@ import 'app_localizations.dart';
 
 /// The translations for English (`en`).
 class AppLocalizationsEn extends AppLocalizations {
+  @override
+  String get role => 'Role';
+
+  @override
+  String get validationRole => 'Please enter role';
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
@@ -57,10 +62,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get validationPhone => 'Please enter phone number';
 
   @override
-  String get validationPhoneFormat => 'Enter a valid phone number (998 XX XXX XX XX)';
+  String get validationPhoneFormat =>
+      'Enter a valid phone number (998 XX XXX XX XX)';
 
   @override
-  String get validationEmailFormat => 'Enter a valid email (e.g. user@mail.com)';
+  String get validationEmailFormat =>
+      'Enter a valid email (e.g. user@mail.com)';
 
   @override
   String get validationLogin => 'Please enter login';

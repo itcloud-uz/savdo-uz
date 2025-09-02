@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Employee {
   final String? id;
   final String name;
-  final String position;
+  final String role;
   final String? phone;
   final String? imageUrl;
   final String? login;
@@ -13,7 +13,7 @@ class Employee {
   Employee({
     this.id,
     required this.name,
-    required this.position,
+    required this.role,
     this.phone,
     this.imageUrl,
     this.login,
@@ -27,12 +27,16 @@ class Employee {
     return Employee(
       id: doc.id,
       name: data['name'] ?? '',
-      position: data['position'] ?? '',
+      role: data['role'] ?? '',
       phone: data['phone'],
       imageUrl: data['imageUrl'],
       login: data['login'],
       password: data['password'],
-      faceData: List<dynamic>.from(data['faceData'] ?? []),
+      faceData: (data['faceData'] is Iterable)
+          ? List<dynamic>.from(data['faceData'])
+          : (data['faceData'] is Map)
+              ? (data['faceData'] as Map).values.toList()
+              : [],
     );
   }
 
@@ -40,7 +44,7 @@ class Employee {
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
-      'position': position,
+      'role': role,
       'phone': phone,
       'imageUrl': imageUrl,
       'login': login,

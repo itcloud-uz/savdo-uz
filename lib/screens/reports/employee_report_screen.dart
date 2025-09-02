@@ -30,7 +30,7 @@ class EmployeeReportScreen extends StatelessWidget {
                 return pw.TableRow(children: [
                   pw.Text('${i + 1}'),
                   pw.Text(e.name),
-                  pw.Text(e.position),
+                  pw.Text(e.role),
                   pw.Text(e.phone ?? '-'),
                 ]);
               })
@@ -69,7 +69,7 @@ class EmployeeReportScreen extends StatelessWidget {
       sheet.appendRow([
         TextCellValue('${i + 1}'),
         TextCellValue(e.name),
-        TextCellValue(e.position),
+        TextCellValue(e.role),
         TextCellValue(e.phone ?? '-'),
       ]);
     }
@@ -93,7 +93,7 @@ class EmployeeReportScreen extends StatelessWidget {
     buffer.writeln('№,Ism,Lavozim,Telefon');
     for (int i = 0; i < employees.length; i++) {
       final e = employees[i];
-      buffer.writeln('${i + 1},${e.name},${e.position},${e.phone ?? '-'}');
+      buffer.writeln('${i + 1},${e.name},${e.role},${e.phone ?? '-'}');
     }
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/xodimlar_hisoboti.csv');
@@ -160,7 +160,7 @@ class EmployeeReportScreen extends StatelessWidget {
                   return ListTile(
                     leading: CircleAvatar(child: Text('${index + 1}')),
                     title: Text(e.name),
-                    subtitle: Text(e.position),
+                    subtitle: Text(e.role),
                     trailing: Text(e.phone ?? '-'),
                   );
                 },

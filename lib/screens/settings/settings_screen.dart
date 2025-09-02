@@ -106,83 +106,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.read<AuthProvider>();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sozlamalar'),
-      ),
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Stack(
-              children: [
-                Image.asset(
-                  'assets/images/sozlamlar.jpg',
-                  fit: BoxFit.cover,
-                ),
-                Positioned.fill(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                    child: Container(
-                      color: Colors.black.withOpacity(0.18),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return Consumer<LocaleProvider>(
+      builder: (context, localeProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Sozlamalar'),
           ),
-          ListView(
+          body: Stack(
             children: [
-              ListTile(
-                leading: const Icon(Icons.language),
-                title: const Text('Tilni tanlash'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showLanguageDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.business_outlined),
-                title: const Text('Kompaniya ma\'lumotlari'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const CompanyInfoScreen()));
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.brightness_6_outlined),
-                title: const Text('Mavzu (Yorug\'/Qorong\'u)'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showThemeDialog(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('Dastur haqida'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const AboutScreen()));
-                },
-              ),
-              const Divider(),
-              ListTile(
-                leading: Icon(Icons.logout,
-                    color: Theme.of(context).colorScheme.error),
-                title: Text(
-                  'Chiqish',
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+              Positioned.fill(
+                child: Stack(
+                  children: [
+                    Image.asset(
+                      'assets/images/sozlamlar.jpg',
+                      fit: BoxFit.cover,
+                    ),
+                    Positioned.fill(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          color: Colors.black.withOpacity(0.18),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                onTap: () async {
-                  await authProvider.signOut();
-                },
+              ),
+              ListView(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.language),
+                    title: const Text('Tilni tanlash'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showLanguageDialog(context),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.brightness_6_outlined),
+                    title: const Text('Mavzu (Yorug\'/Qorong\'u)'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _showThemeDialog(context),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.info_outline),
+                    title: const Text('Dastur haqida'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AboutScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.business),
+                    title: const Text('Kompaniya haqida'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CompanyInfoScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  const Divider(),
+                  ListTile(
+                    leading: Icon(Icons.logout,
+                        color: Theme.of(context).colorScheme.error),
+                    title: Text(
+                      'Chiqish',
+                      style:
+                          TextStyle(color: Theme.of(context).colorScheme.error),
+                    ),
+                    onTap: () async {
+                      await authProvider.signOut();
+                    },
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

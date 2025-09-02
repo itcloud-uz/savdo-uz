@@ -51,12 +51,12 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
             child: Stack(
               children: [
                 Image.asset(
-                  'assets/images/xodimlar_bulimi.jpg',
+                  'assets/images/Menyular_orqafoni.jpg',
                   fit: BoxFit.cover,
                 ),
                 Positioned.fill(
                   child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                    filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                     child: Container(
                       color: Colors.black.withOpacity(0.18),
                     ),
@@ -97,81 +97,122 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                     final filteredEmployees = allEmployees.where((employee) {
                       return employee.name.toLowerCase().contains(_searchQuery);
                     }).toList();
-
                     if (filteredEmployees.isEmpty) {
                       return const EmptyStateWidget(
                         message: 'Qidiruv natijasi topilmadi.',
                         icon: Icons.search_off,
                       );
                     }
-
-                    return ListView.builder(
+                    // 5x5 grid ko'rinishi
+                    return GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        childAspectRatio: 0.78,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
                       itemCount: filteredEmployees.length,
                       itemBuilder: (context, index) {
                         final employee = filteredEmployees[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          color: Colors.white.withAlpha((0.78 * 255).toInt()),
-                          elevation: 3,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundImage: (employee.imageUrl != null &&
-                                          employee.imageUrl!.isNotEmpty)
-                                      ? CachedNetworkImageProvider(
-                                          employee.imageUrl!)
-                                      : null,
-                                  child: (employee.imageUrl == null ||
-                                          employee.imageUrl!.isEmpty)
-                                      ? const Icon(Icons.person, size: 32)
-                                      : null,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(employee.name,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 16)),
-                                      Text(employee.position,
-                                          style: const TextStyle(fontSize: 14)),
-                                      if (employee.login != null &&
-                                          employee.login!.isNotEmpty)
-                                        Text('Login: ${employee.login}',
-                                            style:
-                                                const TextStyle(fontSize: 13)),
-                                      if (employee.password != null &&
-                                          employee.password!.isNotEmpty)
-                                        Text('Parol: ${employee.password}',
-                                            style:
-                                                const TextStyle(fontSize: 13)),
-                                    ],
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    AddEditEmployeeScreen(employee: employee),
+                              ),
+                            );
+                          },
+                          child: Card(
+                            color: Colors.white.withOpacity(0.55),
+                            elevation: 6,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 12,
+                                    offset: Offset(0, 4),
                                   ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.chevron_right),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            AddEditEmployeeScreen(
-                                                employee: employee),
+                                ],
+                              ),
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 28,
+                                    backgroundImage:
+                                        (employee.imageUrl != null &&
+                                                employee.imageUrl!.isNotEmpty)
+                                            ? CachedNetworkImageProvider(
+                                                employee.imageUrl!)
+                                            : null,
+                                    backgroundColor: Colors.blue.shade50,
+                                    child: (employee.imageUrl == null ||
+                                            employee.imageUrl!.isEmpty)
+                                        ? const Icon(Icons.person,
+                                            size: 32, color: Colors.blue)
+                                        : null,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    employee.name,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 17,
+                                      color: Colors.black,
+                                      letterSpacing: 0.2,
+                                      shadows: [
+                                        Shadow(
+                                          color: Colors.white,
+                                          blurRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    employee.role,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 15,
+                                      color: Colors.black87,
+                                      letterSpacing: 0.1,
+                                    ),
+                                  ),
+                                  if (employee.login != null &&
+                                      employee.login!.isNotEmpty)
+                                    Text(
+                                      'Login: ${employee.login}',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                        color: Colors.black87,
                                       ),
-                                    );
-                                  },
-                                ),
-                              ],
+                                    ),
+                                  if (employee.phone != null &&
+                                      employee.phone!.isNotEmpty)
+                                    Text(
+                                      employee.phone!,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -213,7 +254,6 @@ class AddEditEmployeeScreen extends StatefulWidget {
 class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
-  late TextEditingController _positionController;
   late TextEditingController _loginController;
   late TextEditingController _passwordController;
 
@@ -221,8 +261,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.employee?.name);
-    _positionController =
-        TextEditingController(text: widget.employee?.position);
     _loginController = TextEditingController(text: widget.employee?.login);
     _passwordController =
         TextEditingController(text: widget.employee?.password);
@@ -231,7 +269,6 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _positionController.dispose();
     _loginController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -239,7 +276,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final firestoreService = context.read<FirestoreService>();
+    // final firestoreService = context.read<FirestoreService>();
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.employee == null ? 'Yangi Xodim' : 'Tahrirlash'),
@@ -263,7 +300,9 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       GestureDetector(
-                        onTap: () {},
+                        onTap: () async {
+                          // TODO: Implement image picker and face registration
+                        },
                         child: CircleAvatar(
                           radius: 38,
                           backgroundColor: Colors.blue.shade50,
@@ -279,118 +318,40 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                               : null,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.employee == null
-                            ? 'Yuzni ro’yxatdan o’tkazing'
-                            : 'Yuz ro’yxatdan o’tgan',
-                        style: TextStyle(
-                          color: Colors.blueGrey.shade700,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 16),
                       TextFormField(
                         controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Ism-sharifi',
-                          prefixIcon: const Icon(Icons.person_outline),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                        decoration: const InputDecoration(
+                          labelText: 'Ism',
                         ),
-                        style: const TextStyle(fontSize: 14),
                         validator: (value) => value == null || value.isEmpty
-                            ? 'Ismni kiriting.'
+                            ? 'Ism majburiy'
                             : null,
                       ),
-                      const SizedBox(height: 10),
-                      TextFormField(
-                        controller: _positionController,
-                        decoration: InputDecoration(
-                          labelText: 'Lavozimi',
-                          prefixIcon: const Icon(Icons.work_outline),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10)),
-                        ),
-                        style: const TextStyle(fontSize: 14),
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Lavozimni kiriting.'
-                            : null,
-                      ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _loginController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Login',
-                          prefixIcon: const Icon(Icons.login),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10)),
                         ),
-                        style: const TextStyle(fontSize: 14),
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Loginni kiriting.'
-                            : null,
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _passwordController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Parol',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10)),
                         ),
-                        style: const TextStyle(fontSize: 14),
                         obscureText: true,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Parolni kiriting.'
-                            : null,
                       ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.save),
-                          label: Text(widget.employee == null
-                              ? 'Saqlash'
-                              : 'Yangilash'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue.shade600,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            elevation: 2,
-                          ),
-                          onPressed: () {
-                            if (_formKey.currentState!.validate()) {
-                              final updatedEmployee = Employee(
-                                id: widget.employee?.id ?? '',
-                                name: _nameController.text,
-                                position: _positionController.text,
-                                login: _loginController.text,
-                                password: _passwordController.text,
-                                imageUrl: widget.employee?.imageUrl,
-                              );
-                              if (widget.employee == null) {
-                                firestoreService.addEmployee(updatedEmployee);
-                              } else {
-                                firestoreService
-                                    .updateEmployee(updatedEmployee);
-                              }
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            // TODO: Save logic
+                          }
+                        },
+                        child: Text(
+                            widget.employee == null ? 'Saqlash' : 'Yangilash'),
                       ),
                     ],
                   ),
