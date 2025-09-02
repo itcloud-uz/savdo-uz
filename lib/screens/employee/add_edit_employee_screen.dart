@@ -60,7 +60,13 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
     _existingImageUrl = widget.employee?.imageUrl;
   }
 
-  Future<void> _pickAndRegisterFace() async {}
+  Future<void> _pickAndRegisterFace() async {
+    // TODO: Implement face registration logic if needed
+    setState(() {
+      _statusMessage = 'Yuz roʻyxatdan oʻtkazildi (demo)';
+      _faceData = [1.0]; // Demo value
+    });
+  }
 
   @override
   void dispose() {
@@ -167,16 +173,17 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
             leading: const Icon(Icons.photo_library),
             title: const Text('Galereyadan tanlash'),
             onTap: () async {
-              // TODO: Implement gallery picker
-              Navigator.pop(ctx, null);
+              // Demo: pick image from gallery
+              // You can use image_picker package for real implementation
+              Navigator.pop(ctx, null); // Replace with actual file
             },
           ),
           ListTile(
             leading: const Icon(Icons.camera_alt),
             title: const Text('Kamera orqali'),
             onTap: () async {
-              // TODO: Implement camera picker
-              Navigator.pop(ctx, null);
+              // Demo: pick image from camera
+              Navigator.pop(ctx, null); // Replace with actual file
             },
           ),
         ],
@@ -226,8 +233,8 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 420),
                 child: Card(
-                  color: Colors.white.withOpacity(0.78),
-                  elevation: 8,
+                  color: Colors.white.withOpacity(0.95),
+                  elevation: 10,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -238,6 +245,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                       key: _formKey,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           GestureDetector(
                             onTap: () async {
@@ -296,6 +304,8 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                             validator: (value) => value!.trim().isEmpty
                                 ? l10n.validationName
                                 : null,
+                            // Font style for visibility
+                            obscureText: false,
                           ),
                           const SizedBox(height: 14),
                           CustomTextField(
@@ -304,6 +314,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                             validator: (value) => value!.trim().isEmpty
                                 ? l10n.validationRole
                                 : null,
+                            obscureText: false,
                           ),
                           const SizedBox(height: 14),
                           CustomTextField(
@@ -317,6 +328,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                                 return l10n.validationPhoneFormat;
                               return null;
                             },
+                            obscureText: false,
                           ),
                           const SizedBox(height: 14),
                           CustomTextField(
@@ -330,6 +342,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                               }
                               return null;
                             },
+                            obscureText: false,
                           ),
                           const SizedBox(height: 14),
                           CustomTextField(
@@ -338,6 +351,7 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                             validator: (value) => value!.trim().isEmpty
                                 ? l10n.validationLogin
                                 : null,
+                            obscureText: false,
                           ),
                           const SizedBox(height: 14),
                           CustomTextField(
@@ -350,13 +364,19 @@ class _AddEditEmployeeScreenState extends State<AddEditEmployeeScreen> {
                           ),
                           const SizedBox(height: 24),
                           _isLoading
-                              ? const CircularProgressIndicator()
+                              ? const Center(child: CircularProgressIndicator())
                               : SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton.icon(
                                     icon: const Icon(Icons.save),
                                     label: Text(l10n.save),
                                     onPressed: _saveEmployee,
+                                    style: ElevatedButton.styleFrom(
+                                      textStyle: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
                                   ),
                                 ),
                         ],

@@ -14,6 +14,7 @@ import 'package:savdo_uz/services/auth_service.dart';
 import 'package:savdo_uz/services/face_recognition_service.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:savdo_uz/l10n/app_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:savdo_uz/models/inventory_item.dart';
 
@@ -94,16 +95,21 @@ class _MyAppState extends State<MyApp> {
       home: const SplashScreen(),
       locale: localeProvider.locale,
       supportedLocales: const [
-        Locale('uz'),
-        Locale('ru'),
         Locale('en'),
+        Locale('ru'),
         Locale('tr'),
+        Locale('uz'),
       ],
       localizationsDelegates: [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        // Rebuild UI on theme/locale change
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

@@ -4,11 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:savdo_uz/models/employee_model.dart';
 import 'package:savdo_uz/services/firestore_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:savdo_uz/widgets/custom_search_bar.dart';
-import 'package:savdo_uz/widgets/loading_list_tile.dart';
-import 'package:savdo_uz/widgets/error_retry_widget.dart';
-import 'package:savdo_uz/widgets/empty_state_widget.dart';
-import 'package:savdo_uz/widgets/accessible_icon_button.dart';
 
 class EmployeesScreen extends StatefulWidget {
   const EmployeesScreen({super.key});
@@ -18,7 +13,7 @@ class EmployeesScreen extends StatefulWidget {
 }
 
 class _EmployeesScreenState extends State<EmployeesScreen> {
-  final _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
   @override
@@ -44,6 +39,13 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Xodimlar'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => setState(() {}),
+            tooltip: 'Yangilash',
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -58,7 +60,16 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                     child: Container(
-                      color: Colors.black.withOpacity(0.18),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.22),
+                            Colors.blueGrey.withOpacity(0.12)
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -67,27 +78,31 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           ),
           Column(
             children: [
-              CustomSearchBar(
-                controller: _searchController,
-                onChanged: (query) =>
-                    setState(() => _searchQuery = query.toLowerCase()),
-                hintText: 'Xodim ismi bo\'yicha qidirish...',
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: "Ism, login yoki telefon bo'yicha qidirish...",
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.85),
+                  ),
+                ),
               ),
               Expanded(
                 child: StreamBuilder<List<Employee>>(
                   stream: firestoreService.getEmployees(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return ListView.builder(
-                        itemCount: 5,
-                        itemBuilder: (ctx, i) => const LoadingListTile(),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     }
                     if (snapshot.hasError) {
-                      return ErrorRetryWidget(
-                        errorMessage: 'Xatolik: ${snapshot.error}',
-                        onRetry: () => setState(() {}),
-                      );
+                      return Center(child: Text('Xatolik: ${snapshot.error}'));
                     }
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return const Center(child: Text('Xodimlar mavjud emas.'));
@@ -95,20 +110,24 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
 
                     final allEmployees = snapshot.data!;
                     final filteredEmployees = allEmployees.where((employee) {
-                      return employee.name.toLowerCase().contains(_searchQuery);
+                      final query = _searchQuery;
+                      return employee.name.toLowerCase().contains(query) ||
+                          (employee.login?.toLowerCase().contains(query) ??
+                              false) ||
+                          (employee.phone?.toLowerCase().contains(query) ??
+                              false);
                     }).toList();
+
                     if (filteredEmployees.isEmpty) {
-                      return const EmptyStateWidget(
-                        message: 'Qidiruv natijasi topilmadi.',
-                        icon: Icons.search_off,
-                      );
+                      return const Center(
+                          child: Text('Qidiruv natijasi topilmadi.'));
                     }
-                    // 5x5 grid ko'rinishi
+
                     return GridView.builder(
                       padding: const EdgeInsets.all(16),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 5,
+                        crossAxisCount: 4,
                         childAspectRatio: 0.78,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
@@ -116,39 +135,32 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                       itemCount: filteredEmployees.length,
                       itemBuilder: (context, index) {
                         final employee = filteredEmployees[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AddEditEmployeeScreen(employee: employee),
-                              ),
-                            );
-                          },
-                          child: Card(
-                            color: Colors.white.withOpacity(0.55),
-                            elevation: 6,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 12,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              padding: const EdgeInsets.all(10),
+                        return Card(
+                          color: Colors.white,
+                          elevation: 8,
+                          shadowColor: Colors.blueGrey.withOpacity(0.18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      AddEditEmployeeScreen(employee: employee),
+                                ),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 14),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   CircleAvatar(
-                                    radius: 28,
+                                    radius: 30,
                                     backgroundImage:
                                         (employee.imageUrl != null &&
                                                 employee.imageUrl!.isNotEmpty)
@@ -159,23 +171,21 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                                     child: (employee.imageUrl == null ||
                                             employee.imageUrl!.isEmpty)
                                         ? const Icon(Icons.person,
-                                            size: 32, color: Colors.blue)
+                                            size: 34, color: Colors.blue)
                                         : null,
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 10),
                                   Text(
                                     employee.name,
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w900,
-                                      fontSize: 17,
+                                      fontSize: 18,
                                       color: Colors.black,
                                       letterSpacing: 0.2,
                                       shadows: [
                                         Shadow(
-                                          color: Colors.white,
-                                          blurRadius: 2,
-                                        ),
+                                            color: Colors.white, blurRadius: 2),
                                       ],
                                     ),
                                   ),
@@ -185,7 +195,7 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 15,
-                                      color: Colors.black87,
+                                      color: Colors.blueGrey,
                                       letterSpacing: 0.1,
                                     ),
                                   ),
@@ -211,6 +221,66 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
                                         color: Colors.black87,
                                       ),
                                     ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(Icons.edit,
+                                            color: Colors.blueAccent),
+                                        tooltip: 'Tahrirlash',
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  AddEditEmployeeScreen(
+                                                      employee: employee),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline,
+                                            color: Colors.redAccent),
+                                        tooltip: 'O\'chirish',
+                                        onPressed: () async {
+                                          final confirm =
+                                              await showDialog<bool>(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: const Text(
+                                                  "O'chirishni tasdiqlang"),
+                                              content: Text(
+                                                  "${employee.name} nomli xodimni o'chirishga ishonchingiz komilmi?"),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () =>
+                                                        Navigator.pop(
+                                                            ctx, false),
+                                                    child: const Text(
+                                                        'Bekor qilish')),
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(ctx, true),
+                                                  style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.red),
+                                                  child:
+                                                      const Text("O'chirish"),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                          if (confirm == true) {
+                                            await firestoreService
+                                                .deleteEmployee(employee.id!);
+                                            setState(() {});
+                                          }
+                                        },
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -225,18 +295,17 @@ class _EmployeesScreenState extends State<EmployeesScreen> {
           ),
         ],
       ),
-      floatingActionButton: AccessibleIconButton(
-        icon: Icons.add,
-        semanticLabel: 'Xodim qo‘shish',
+      floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AddEditEmployeeScreen(),
-              ));
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddEditEmployeeScreen(),
+            ),
+          );
         },
-        color: Colors.white,
-        size: 28,
+        child: const Icon(Icons.add),
+        tooltip: 'Yangi xodim',
       ),
     );
   }

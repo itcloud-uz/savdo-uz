@@ -106,11 +106,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.read<AuthProvider>();
-    return Consumer<LocaleProvider>(
-      builder: (context, localeProvider, child) {
+    return Consumer2<LocaleProvider, ThemeProvider>(
+      builder: (context, localeProvider, themeProvider, child) {
+        final textStyle = Theme.of(context).textTheme.bodyLarge;
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Sozlamalar'),
+            title: Text('Sozlamalar', style: textStyle),
           ),
           body: Stack(
             children: [
@@ -136,19 +137,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.language),
-                    title: const Text('Tilni tanlash'),
+                    title: Text('Tilni tanlash', style: textStyle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showLanguageDialog(context),
                   ),
                   ListTile(
                     leading: const Icon(Icons.brightness_6_outlined),
-                    title: const Text('Mavzu (Yorug\'/Qorong\'u)'),
+                    title: Text('Mavzu (Yorug\'/Qorong\'u)', style: textStyle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _showThemeDialog(context),
                   ),
                   ListTile(
                     leading: const Icon(Icons.info_outline),
-                    title: const Text('Dastur haqida'),
+                    title: Text('Dastur haqida', style: textStyle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
@@ -161,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   ListTile(
                     leading: const Icon(Icons.business),
-                    title: const Text('Kompaniya haqida'),
+                    title: Text('Kompaniya haqida', style: textStyle),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.push(
@@ -178,8 +179,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: Theme.of(context).colorScheme.error),
                     title: Text(
                       'Chiqish',
-                      style:
-                          TextStyle(color: Theme.of(context).colorScheme.error),
+                      style: textStyle?.copyWith(
+                          color: Theme.of(context).colorScheme.error),
                     ),
                     onTap: () async {
                       await authProvider.signOut();
