@@ -131,7 +131,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                               children: [
                                 Text(currencyFormatter.format(product.price)),
                                 Text(
-                                    '${product.quantity.toStringAsFixed(2)} ${product.unit ?? "dona"}'),
+                                    '${product.quantity.toStringAsFixed(2)} ${product.unit}'),
                               ],
                             ),
                             onTap: () {
